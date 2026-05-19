@@ -1,0 +1,196 @@
+#pragma once
+
+#include <d3d12.h>
+#include <dxgi1_6.h>
+#include <wrl.h>
+#include <array>
+#include "WinApp.h"
+#include <dxcapi.h>
+#include "DirectXTex.h"
+#include <string>
+#include "FPSLimiter.h"
+#include <memory>
+#include "Vector4.h"
+#include "PostEffect.h"
+
+using Microsoft::WRL::ComPtr;
+
+class DirectXCommon
+{
+
+public:
+
+	static DirectXCommon* GetInstance();
+
+	~DirectXCommon();
+
+	void Initialize(WinApp* winApp);
+
+	void Device();
+
+	void Command();
+
+	void SwapChain();
+
+	void CreateDepthBuffer();
+
+	void CreateDescriptorHeaps();
+
+	ComPtr<ID3D12Resource> CreateDepthStencilTextureResource(ComPtr <ID3D12Device> device, int32_t width, int32_t height);
+	ComPtr <ID3D12DescriptorHeap> CreateDescriptorHeap(ComPtr <ID3D12Device> device, D3D12_DESCRIPTOR_HEAP_TYPE heapType, UINT numDescriptors, bool shaderVisible);
+
+
+	void InitializeRTV();
+	void InitializeDSV();
+	void InitializeFence();
+	void InitializeViewport();
+	void InitializeScissor();
+
+	void RenderTexturePreDraw();
+	void RenderTexturePostDraw();
+	void PreDraw();
+	void PostDraw();
+
+	IDxcBlob* CompileShader(const std::wstring& filePath,const wchar_t* profile,IDxcUtils* dxcUtils,
+		IDxcCompiler3* dxcCompiler,IDxcIncludeHandler* includeHandler);
+
+	
+	
+
+	ComPtr<ID3D12Device> GetDevice() const { return device; }
+	ComPtr<ID3D12GraphicsCommandList> GetCommandList() const { return commandList; }
+	void Cleanup();
+	ComPtr<ID3D12PipelineState> GetGraphicsPipelineState() const { return graphicsPipelineState; }
+
+	void UploadTextureDate(ComPtr<ID3D12Resource>& texture, const DirectX::ScratchImage& mipImages);
+	
+	int GetSwapChainResourcesNum() const { return swapChainDesc.BufferCount; }
+	uint32_t GetDescriptorSizeSRV() const { return descriptorSizeSRV; }
+
+	static D3D12_CPU_DESCRIPTOR_HANDLE GetCPUDescriptorHandle(const ComPtr<ID3D12DescriptorHeap>& descriptorHeap, uint32_t descriptorSize, uint32_t index);
+	static D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(const ComPtr<ID3D12DescriptorHeap>& descriptorHeap, uint32_t descriptorSize, uint32_t index);
+
+	static const uint32_t kMaxSRVCount;
+
+	ComPtr<ID3D12CommandQueue> GetCommandQueue() const { return commandQueue; }
+
+	void ReportLiveObjects();
+
+	DXGI_FORMAT GetRTVFormat() const { return rtvDesc.Format; }
+	DXGI_FORMAT GetDSVFormat() const { return DXGI_FORMAT_D24_UNORM_S8_UINT; }
+
+	// OffscreenRendering
+	ComPtr<ID3D12Resource> CreateRenderTextureResource(ComPtr<ID3D12Device> device, uint32_t width, uint32_t height, DXGI_FORMAT format, const Vector4 & clearColor);
+	void InitializeOffscreenRenderTarget();
+	void InitializeCopyPipeline();
+	void CopyRenderTextureToSwapChain();
+	void InitializeOffscreenDSV();
+	//Grayscale
+	void InitializeGrayscalePipeline();
+	void DrawGrayscaleToSwapChain();
+	void SetGrayscaleStrength(float strength);
+	bool IsGrayscaleEnabled() const { return useGrayscale_; }
+	void SetGrayscaleEnabled(bool enabled);
+	float GetGrayscaleStrength() const { return grayscaleSettings_.strength; }
+
+	//Vignette
+	void InitializeVignettePipeline(); 
+	void DrawVignetteToSwapChain();  
+	void SetVignetteEnabled(bool enabled);
+	bool IsVignetteEnabled() const { return useVignette_; }
+	void SetVignetteStrength(float strength);
+	float GetVignetteStrength() const { return vignetteSettings_.vignetteStrength; }
+
+	//RadialBlur
+	void InitializeRadialBlurPipeline();
+	void DrawRadialBlurToSwapChain();
+	void SetRadialBlurEnabled(bool enabled);
+	bool IsRadialBlurEnabled() const { return useRadialBlur_; }
+	void SetRadialBlurStrength(float strength);
+	float GetRadialBlurStrength() const { return radialBlurSettings_.blurStrength; }
+
+	int GetRadialBlurNumSamples() const;
+	void SetRadialBlurNumSamples(int);
+
+	float GetRadialBlurCenterX() const;
+	float GetRadialBlurCenterY() const;
+	void SetRadialBlurCenter(float x, float y);
+
+	void SetViewport(float x, float y, float width, float height);
+	void SetScissorRect(int left, int top, int right, int bottom);
+private:
+
+	DirectXCommon() = default;
+	DirectXCommon(DirectXCommon&) = delete;
+	const DirectXCommon& operator=(DirectXCommon&) = delete;
+
+	ComPtr<ID3D12Device> device;
+	ComPtr<IDXGIFactory7> dxgiFactory = nullptr;
+	ComPtr<ID3D12CommandAllocator> commandAllocator = nullptr;
+	ComPtr<ID3D12GraphicsCommandList> commandList = nullptr;
+	ComPtr<ID3D12CommandQueue> commandQueue = nullptr;
+	ComPtr<IDXGISwapChain4> swapChain = nullptr;
+	DXGI_SWAP_CHAIN_DESC1 swapChainDesc{};
+
+	ComPtr<ID3D12Resource> depthStencilBuffer;
+	ComPtr<ID3D12DescriptorHeap> rtvHeap;
+	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandles[2];
+	UINT rtvDescriptorSize;
+	D3D12_RENDER_TARGET_VIEW_DESC rtvDesc{};
+
+	std::array<ComPtr<ID3D12Resource>, 2> swapChainResources;
+
+	uint32_t descriptorSizeSRV;
+	uint32_t descriptorSizeRTV;
+	uint32_t descriptorSizeDSV;
+
+	ComPtr<ID3D12DescriptorHeap> rtvDescriptorHeap;
+	ComPtr<ID3D12DescriptorHeap> dsvDescriptorHeap;
+
+	ComPtr<ID3D12Fence> fence;
+	uint64_t fenceValue = 0;
+	std::unique_ptr<void, decltype(&CloseHandle)> fenceEvent{ nullptr, CloseHandle };
+	UINT64 fenceVal = 0;
+
+	D3D12_VIEWPORT viewport;
+	D3D12_RECT scissorRect;
+
+	WinApp* winApp = nullptr;
+	ComPtr<ID3D12RootSignature> rootSignature;
+	ComPtr<ID3D12PipelineState> graphicsPipelineState;
+	
+	
+	std::unique_ptr<FPSLimiter> fpsLimiter;
+
+	//OffscreenRendering
+	ComPtr<ID3D12Resource> offscreenRenderTarget_;
+	ComPtr<ID3D12Resource> offscreenDepthStencilBuffer_;
+	ComPtr<ID3D12DescriptorHeap> offscreenDSVHeap_;
+	D3D12_CPU_DESCRIPTOR_HANDLE offscreenDSVHandle_;
+	ComPtr<ID3D12DescriptorHeap> offscreenRTVHeap_;
+	D3D12_CPU_DESCRIPTOR_HANDLE offscreenRTVHandle_;
+	ComPtr<ID3D12RootSignature> copyRootSignature_;
+	ComPtr<ID3D12PipelineState> copyPipelineState_;
+	uint32_t offscreenSRVIndex_ = 0;
+	//Grayscale
+	ComPtr<ID3D12RootSignature> grayscaleRootSignature_;
+	ComPtr<ID3D12PipelineState> grayscalePipelineState_;
+	ComPtr<ID3D12Resource> grayscaleConstBuffer_;
+	GrayscaleSettings grayscaleSettings_ = { 1.0f }; 
+	D3D12_GPU_DESCRIPTOR_HANDLE grayscaleCbvHandle_;\
+	bool useGrayscale_ = true;
+	//Vignette
+	ComPtr<ID3D12RootSignature> vignetteRootSignature_;
+	ComPtr<ID3D12PipelineState> vignettePipelineState_;
+	bool useVignette_ = false;
+	VignetteSettings vignetteSettings_ = { 1.0f };
+	ComPtr<ID3D12Resource> vignetteConstBuffer_;
+	//RadialBlur
+	ComPtr<ID3D12RootSignature> radialBlurRootSignature_;
+	ComPtr<ID3D12PipelineState> radialBlurPipelineState_;
+	ComPtr<ID3D12Resource> radialBlurConstBuffer_;
+	RadialBlurSettings radialBlurSettings_; 
+	bool useRadialBlur_ = false;
+
+};
+
