@@ -14,6 +14,7 @@
 #include "Sound.h"
 #include "SceneManager.h"
 #include "AbstractSceneFactory.h"
+#include "ModelManager.h"
 #ifdef _DEBUG
 #include "ImGuiManager.h"
 #include "imgui.h"

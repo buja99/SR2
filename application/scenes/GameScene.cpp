@@ -5,6 +5,16 @@
 #endif // _DEBUG
 #include "MyMath.h"
 #include "LevelObjectBuilder.h"
+#include "PostProcessManager.h"
+#include "GrayscaleEffect.h"
+#include "VignetteEffect.h"
+#include "LightManager.h"
+#include "DirectionalLight.h"
+#include "Object3dCommon.h"
+#include "ModelManager.h"
+#include "DirectXCommon.h"
+#include "Object3d.h"
+
 GameScene::~GameScene() {
 }
 
@@ -88,34 +98,25 @@ player_->SetEnemies(rawEnemies);
 
 // Load and apply level data
 
-test_plyerTransforms_ = std::make_unique<WorldTransform>();
-test_plyerTransforms_->Initialize();
-test_plyer = std::make_unique<Object3d>();
-test_plyer->Initialize(Object3dCommon::GetInstance(), test_plyerTransforms_.get());
+test_plyer = std::make_unique<Prop>();
 
 ModelManager::GetInstance()->LoadModel("resources/test_player", "player01.gltf");
-test_plyer->SetModel("player01.gltf");
+test_plyer->Initialize("player01.gltf");
 
-test_plyer->SetRotate({ 1.6f, 0.0f, 3.14f });
-test_plyer->SetTranslate({ 0.0f, 0.0f, 0.0f });
+test_plyer->SetTranslate({ 10.0f, 0.0f, 5.0f });
 test_plyer->SetCamera(camera_.get());
 
 
-blockTransforms_ = std::make_unique<WorldTransform>();
-blockTransforms_->Initialize();
-block_ = std::make_unique<Object3d>();
-block_->Initialize(Object3dCommon::GetInstance(), blockTransforms_.get());
+block_ = std::make_unique<Prop>();
 
 ModelManager::GetInstance()->LoadModel("resources/enemy", "enemyTest.obj");
-block_->SetModel("enemyTest.obj");
+block_->Initialize("enemyTest.obj");
 block_->SetCamera(camera_.get());
-block_->SetScale({ 12.0f, 3.0f, 3.0f });
-block_->SetUseEnvironmentMap(true);
-block_->SetEnvironmentMap("resources/rostock_laage_airport_4k.dds");
+block_->SetTranslate({ 10.0f, 0.0f, 5.0f });
+
 camera_->SetTranslate({ 0.0f, 5.0f, -14.0f });
 
-DirectXCommon::GetInstance()->SetGrayscaleStrength(0.0f);
-
+PostProcessManager::GetInstance()->ClearEffects();
 
 }
 
@@ -129,10 +130,7 @@ void GameScene::Update() {
 
 	ImGui::Begin("Stencil Mask");
 
-	ImGui::SliderFloat("Center X", &centerX, -1.0f, 1.0f);
-	ImGui::SliderFloat("Center Y", &centerY, -1.0f, 1.0f);
-	ImGui::SliderFloat("Half Width", &halfW, 0.0f, 10.0f);
-	ImGui::SliderFloat("Half Height", &halfH, 0.0f, 10.0f);
+	
 
 	ImGui::End();
 
@@ -154,9 +152,9 @@ void GameScene::Update() {
 
 	ImGui::Begin("Model Transform");
 
-	Vector3 scale = block_->GetScale();
-	Vector3 rotate = block_->GetRotate();
-	Vector3 translate = block_->GetTranslate();
+	Vector3 scale = block_->GetWorldTransform().scale_;
+	Vector3 rotate = block_->GetWorldTransform().rotate_;
+	Vector3 translate = block_->GetWorldTransform().translate_;
 
 	// 슬라이더로 값 수정
 	ImGui::DragFloat3("Scale", &scale.x, 0.1f);
@@ -171,10 +169,8 @@ void GameScene::Update() {
 
 #endif
 	test_plyer->Update();
-	test_plyerTransforms_->UpdateMatrix();
 
 	block_->Update();
-	blockTransforms_->UpdateMatrix();
 
 	back_->Update();
 
@@ -208,10 +204,7 @@ void GameScene::Draw() {
 	
 	//back_->Draw();
 	
-	left = centerX - halfW;
-	right = centerX + halfW;
-	top = centerY + halfH;
-	bottom = centerY - halfH;
+	
 
 	//// 1. 마스크 사각형 지정
 	//Object3dCommon::GetInstance()->SetStencilQuadArea(-1.0f, 1.0f, 1.0f, -1.0f, 0.0f);

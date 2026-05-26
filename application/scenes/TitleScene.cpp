@@ -1,6 +1,16 @@
 #include "TitleScene.h"
 #include "SceneManager.h"
 #include "ImGuiManager.h"
+#include "PostProcessManager.h"
+#include "GrayscaleEffect.h"
+#include "VignetteEffect.h"
+#include "LightManager.h"
+#include "DirectionalLight.h"
+#include "Object3dCommon.h"
+#include "ModelManager.h"
+#include "DirectXCommon.h"
+#include "Object3d.h"
+
 TitleScene::~TitleScene() {
 	Finalize();
 }
@@ -11,16 +21,10 @@ void TitleScene::Initialize() {
 	input_ = Input::GetInstance();
 	camera_ = std::make_unique<Camera>();
 
+	auto dxCommon = DirectXCommon::GetInstance();
 	ModelManager::GetInstance()->Initialize(DirectXCommon::GetInstance());
 
-	worldTransform_ = std::make_unique<WorldTransform>();
-	worldTransform_->Initialize();
-
-	testWorldTransform_ = std::make_unique<WorldTransform>();
-	testWorldTransform_->Initialize();
-
-	model_ = std::make_unique<Object3d>();
-	model_->Initialize(Object3dCommon::GetInstance(), worldTransform_.get());
+	
 	//Tl2 test
 	ModelManager::GetInstance()->LoadModel("resources/enemy", "enemy.obj");
 	TextureManager::GetInstance()->LoadTextureDDS("resources/player01.dds", false);
@@ -28,17 +32,17 @@ void TitleScene::Initialize() {
 
 	ModelManager::GetInstance()->LoadModel("resources/test1", "head.obj");
 	ModelManager::GetInstance()->LoadModel("resources/obj/tree", "tree.obj");
-	model_->SetModel("tree.obj");
+	model_ = std::make_unique<Prop>();
+	model_->Initialize("tree.obj");
 
-	testModel_ = std::make_unique<Object3d>();
-	testModel_->Initialize(Object3dCommon::GetInstance(), testWorldTransform_.get());
+	testModel_ = std::make_unique<Prop>();
 
 	/*ModelManager::GetInstance()->LoadModel("resources/test", "terrain.gltf");
 	ModelManager::GetInstance()->LoadModel("resources/test_player", "walk.gltf");*/
 
-	testModel_->SetModel("enemy.obj");
-	testModel_->SetUseEnvironmentMap(false);
-	testModel_->SetTextureDDS2D("resources/player01.dds");
+	testModel_->Initialize("enemy.obj");
+	/*testModel_->SetUseEnvironmentMap(false);
+	testModel_->SetTextureDDS2D("resources/player01.dds");*/
 
 	//testModel_->SetEnableLighting(true);
 	//testModel_->SetIsBlinnPhong(true);          // Phong
@@ -75,7 +79,7 @@ void TitleScene::Initialize() {
 	TextureManager::GetInstance()->LoadTexture("resources/gradationLine.png");
 	TextureManager::GetInstance()->LoadTexture("resources/circle.png");
 
-	effectLibrary_ = std::make_unique<ParticleEffectLibrary>();
+	/*effectLibrary_ = std::make_unique<ParticleEffectLibrary>();
 	effectLibrary_->Initialize(DirectXCommon::GetInstance(), SrvManager::GetInstance(), camera_.get());
 
 	effectLibrary_->EmitPrimitive({ 0.0f, 10.0f, 0.0f }, randomEngine_);
@@ -85,10 +89,10 @@ void TitleScene::Initialize() {
 	effectLibrary_->SetUseRingAutoEmit(true);
 
 	effectLibrary_->EmitCylinder({ 8.0f, 2.0f, 0.0f }, randomEngine_);
-	effectLibrary_->SetUseCylinderAutoEmit(true);
+	effectLibrary_->SetUseCylinderAutoEmit(true);*/
 
 
-	DirectXCommon::GetInstance()->SetGrayscaleStrength(0.0f);
+	
 }
 
 void TitleScene::Update() {
@@ -97,10 +101,9 @@ void TitleScene::Update() {
 
 	model_->Update();
 	testModel_->Update();
-	worldTransform_->UpdateMatrix();
-	testWorldTransform_->UpdateMatrix();
+	
 	camera_->Update();
-	effectLibrary_->Update();
+	//effectLibrary_->Update();
 
 #ifdef _DEBUG
 	ImGui::Begin("Model Transform");
@@ -157,7 +160,7 @@ void TitleScene::Update() {
 		ImGui::DragFloat("Intensity##Point", &intensity, 0.1f);
 		ImGui::DragFloat("Radius##Point", &radius, 0.1f);
 		ImGui::DragFloat("Decay##Point", &decay, 0.1f);
-		testModel_->SetPointLight(position, intensity, radius, decay);
+		
 	}
 
 	// Spot Light 상세 조정
@@ -178,10 +181,7 @@ void TitleScene::Update() {
 		ImGui::DragFloat("OuterCutoff##Spot", &outerCutoff, 1.0f, 0.0f, 90.0f);
 		ImGui::DragFloat("Decay##Spot", &decay, 0.1f);
 		ImGui::DragFloat("Radius##Spot", &radius, 0.1f);
-		testModel_->SetSpotLight(position, direction, intensity,
-			cosf(MyMath::ToRadian(cutoff)),
-			cosf(MyMath::ToRadian(outerCutoff)),
-			decay, radius);
+		
 	}
 
 	// Area Light 상세 조정
@@ -202,7 +202,7 @@ void TitleScene::Update() {
 		ImGui::DragFloat("Half Height##Area", &halfHeight, 0.1f);
 		ImGui::ColorEdit4("Color##Area", &color.x);
 		ImGui::DragFloat("Intensity##Area", &intensity, 0.1f);
-		testModel_->SetAreaLight(position, right, halfWidth, up, halfHeight, color, intensity);
+		
 	}
 
 	ImGui::End();
@@ -216,69 +216,11 @@ void TitleScene::Update() {
 
 	ImGui::Begin("PostEffect");
 
-	// === Grayscale ===
-	if (ImGui::Checkbox("Use Grayscale", &useGrayscale_)) {
-		if (useGrayscale_) {
-			useVignette_ = false;
-			useRadialBlur_ = false;
-			DirectXCommon::GetInstance()->SetVignetteEnabled(false);
-			DirectXCommon::GetInstance()->SetRadialBlurEnabled(false);
-		}
-		DirectXCommon::GetInstance()->SetGrayscaleEnabled(useGrayscale_);
-	}
+	
 
-	float grayscaleStrength = DirectXCommon::GetInstance()->GetGrayscaleStrength();
-	if (ImGui::SliderFloat("Grayscale Strength", &grayscaleStrength, 0.0f, 1.0f)) {
-		DirectXCommon::GetInstance()->SetGrayscaleStrength(grayscaleStrength);
-	}
+	ImGui::Separator(); 
 
-	// === Vignette ===
-	if (ImGui::Checkbox("Use Vignette", &useVignette_)) {
-		if (useVignette_) {
-			useGrayscale_ = false;
-			useRadialBlur_ = false;
-			DirectXCommon::GetInstance()->SetGrayscaleEnabled(false);
-			DirectXCommon::GetInstance()->SetRadialBlurEnabled(false);
-		}
-		DirectXCommon::GetInstance()->SetVignetteEnabled(useVignette_);
-	}
 
-	float vignetteStrength = DirectXCommon::GetInstance()->GetVignetteStrength();
-	if (ImGui::SliderFloat("Vignette Strength", &vignetteStrength, 0.0f, 1.0f)) {
-		DirectXCommon::GetInstance()->SetVignetteStrength(vignetteStrength);
-	}
-
-	// === Radial Blur ===
-	if (ImGui::Checkbox("Use RadialBlur", &useRadialBlur_)) {
-		if (useRadialBlur_) {
-			useGrayscale_ = false;
-			useVignette_ = false;
-			DirectXCommon::GetInstance()->SetGrayscaleEnabled(false);
-			DirectXCommon::GetInstance()->SetVignetteEnabled(false);
-		}
-		DirectXCommon::GetInstance()->SetRadialBlurEnabled(useRadialBlur_);
-	}
-
-	// 샘플 수 조절
-	int sampleCount = DirectXCommon::GetInstance()->GetRadialBlurNumSamples();
-	if (ImGui::SliderInt("Samples", &sampleCount, 2, 64)) {
-		DirectXCommon::GetInstance()->SetRadialBlurNumSamples(sampleCount);
-	}
-
-	// 블러 강도
-	float strength = DirectXCommon::GetInstance()->GetRadialBlurStrength();
-	if (ImGui::SliderFloat("Strength", &strength, 0.0f, 1.0f)) {
-		DirectXCommon::GetInstance()->SetRadialBlurStrength(strength);
-	}
-
-	// 중심 위치
-	float center[2] = {
-	DirectXCommon::GetInstance()->GetRadialBlurCenterX(),
-	DirectXCommon::GetInstance()->GetRadialBlurCenterY()
-	};
-	if (ImGui::SliderFloat2("Center", center, 0.0f, 1.0f)) {
-		DirectXCommon::GetInstance()->SetRadialBlurCenter(center[0], center[1]);
-	}
 
 	ImGui::End();
 
@@ -303,10 +245,10 @@ void TitleScene::Update() {
 	ImGui::End();
 #endif
 
-	if (input_->TriggerKey(DIK_V)) {
+	/*if (input_->TriggerKey(DIK_V)) {
 		useVignette_ = !useVignette_;
 		DirectXCommon::GetInstance()->SetVignetteEnabled(useVignette_);
-	}
+	}*/
 
 	if (input_->TriggerKey(DIK_SPACE)) {
 		sceneManager_->ChangeScene("GAME");
@@ -315,9 +257,9 @@ void TitleScene::Update() {
 	}
 
 
-	effectLibrary_->GetPrimitiveManager()->Update();
-	effectLibrary_->GetRingManager()->Update();
-	effectLibrary_->GetCylinderManager()->Update();
+	//effectLibrary_->GetPrimitiveManager()->Update();
+	//effectLibrary_->GetRingManager()->Update();
+	//effectLibrary_->GetCylinderManager()->Update();
 }
 
 void TitleScene::Draw() {
@@ -338,17 +280,13 @@ void TitleScene::Draw() {
 
 void TitleScene::Finalize() {
 	if (model_) {
-		model_->Cleanup();
-		model_.reset();
+		model_->Finalize();
+		
 	}
 	if (testModel_) {
-		testModel_->Cleanup();
-		testModel_.reset();
+		testModel_-> Finalize();
 	}
-	if (worldTransform_) {
-		worldTransform_->Cleanup();
-		worldTransform_.reset();
-	}
+	
 	camera_.reset();
 
 	title.reset();

@@ -1,4 +1,5 @@
 #include "MyGame.h"
+#include "PostProcessManager.h"
 
 
 
@@ -28,28 +29,31 @@ void MyGame::Update() {
 
 void MyGame::Draw() {
 
-	// 1. 오프스크린 렌더링
+	// 1. Off-Screen Rendering
 	dxCommon_->RenderTexturePreDraw();
 	srvManager_->PreDraw();
 	sceneManager_->Draw();
 	dxCommon_->RenderTexturePostDraw();
 	//dxCommon_->PreDraw();
-	// 2. 스왑체인으로 복사
+	// 2. Copy to Swap Chain
 	//dxCommon_->CopyRenderTextureToSwapChain();
-	if (dxCommon_->IsVignetteEnabled()) {
-		dxCommon_->DrawVignetteToSwapChain();
-	} else if (dxCommon_->IsGrayscaleEnabled()) {
-		dxCommon_->DrawGrayscaleToSwapChain();
-	} else if (dxCommon_->IsRadialBlurEnabled()) {
-		dxCommon_->DrawRadialBlurToSwapChain();
-	} else {
+	PostProcessManager::GetInstance()->Initialize(dxCommon_->GetDevice().Get());
+
+	if (!PostProcessManager::GetInstance()->HasAnyEffects()) {
+		// 체인에 등록된 이펙트가 하나도 없으면 원본 화면을 그대로 스왑체인(화면)에 복사
 		dxCommon_->CopyRenderTextureToSwapChain();
+	} else {
+		// 체인에 이펙트가 하나라도 있으면 매니저에게 통합 렌더링(후처리) 위임
+		PostProcessManager::GetInstance()->Draw(
+			dxCommon_->GetCommandList().Get(),
+			dxCommon_->GetOffscreenSRVIndex()
+		);
 	}
 #ifdef _DEBUG
 	imGuiManager_->Draw();
 #endif // _DEBUG
 
-	// 3. 최종 렌더링 완료
+	// 3. Final Rendering Complete
 	dxCommon_->PostDraw();
 
 

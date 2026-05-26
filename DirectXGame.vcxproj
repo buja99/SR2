@@ -64,7 +64,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <AdditionalIncludeDirectories>$(ProjectDir)application\Base;$(ProjectDir)application\Input;$(ProjectDir)engine\2D;$(ProjectDir)engine\3D;$(ProjectDir)engine\Math;$(ProjectDir)imgui;$(ProjectDir)externals\DirectXTex;$(ProjectDir)engine\srvManager;$(ProjectDir)engine\camera;$(ProjectDir)engine\particle;$(ProjectDir)resources\shaders;$(ProjectDir);$(ProjectDir)externals\assimp\include;$(ProjectDir)externals\nlohmann_json;$(ProjectDir)application\core;$(ProjectDir)application\debug;$(ProjectDir)application\scenes;$(ProjectDir)application\sceneSystem;$(ProjectDir)engine\audio;$(ProjectDir)engine\gameplay;$(ProjectDir)engine\spriteCamera;$(ProjectDir)engine\utils;$(ProjectDir)engine\worldTransform;$(ProjectDir)engine\utils\json;$(ProjectDir)externals\imgui;$(ProjectDir)engine\render\skybox;$(ProjectDir)engine\graphics\texture</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)application\Base;$(ProjectDir)application\Input;$(ProjectDir)engine\2D;$(ProjectDir)engine\3D;$(ProjectDir)engine\Math;$(ProjectDir)imgui;$(ProjectDir)externals\DirectXTex;$(ProjectDir)engine\srvManager;$(ProjectDir)engine\camera;$(ProjectDir)engine\particle;$(ProjectDir)resources\shaders;$(ProjectDir);$(ProjectDir)externals\assimp\include;$(ProjectDir)externals\nlohmann_json;$(ProjectDir)application\core;$(ProjectDir)application\debug;$(ProjectDir)application\scenes;$(ProjectDir)application\sceneSystem;$(ProjectDir)engine\audio;$(ProjectDir)engine\gameplay;$(ProjectDir)engine\spriteCamera;$(ProjectDir)engine\utils;$(ProjectDir)engine\worldTransform;$(ProjectDir)engine\utils\json;$(ProjectDir)externals\imgui;$(ProjectDir)engine\render\skybox;$(ProjectDir)engine\graphics\texture;$(ProjectDir)engine\3D\lights;$(ProjectDir)engine\render\postEffect</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -95,7 +95,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalIncludeDirectories>$(ProjectDir)application\Base;$(ProjectDir)application\Input;$(ProjectDir)engine\2D;$(ProjectDir)engine\3D;$(ProjectDir)engine\Math;$(ProjectDir)imgui;$(ProjectDir)externals\DirectXTex;$(ProjectDir)engine\srvManager;$(ProjectDir)engine\camera;$(ProjectDir)engine\particle;$(ProjectDir)resources\shaders;$(ProjectDir);$(ProjectDir)externals\assimp\include;$(ProjectDir)externals\nlohmann_json;$(ProjectDir)application\core;$(ProjectDir)application\debug;$(ProjectDir)application\scenes;$(ProjectDir)application\sceneSystem;$(ProjectDir)engine\audio;$(ProjectDir)engine\gameplay;$(ProjectDir)engine\spriteCamera;$(ProjectDir)engine\utils;$(ProjectDir)engine\worldTransform;$(ProjectDir)engine\utils\json;$(ProjectDir)externals\imgui;$(ProjectDir)engine\render\skybox;$(ProjectDir)engine\graphics\texture</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)application\Base;$(ProjectDir)application\Input;$(ProjectDir)engine\2D;$(ProjectDir)engine\3D;$(ProjectDir)engine\Math;$(ProjectDir)imgui;$(ProjectDir)externals\DirectXTex;$(ProjectDir)engine\srvManager;$(ProjectDir)engine\camera;$(ProjectDir)engine\particle;$(ProjectDir)resources\shaders;$(ProjectDir);$(ProjectDir)externals\assimp\include;$(ProjectDir)externals\nlohmann_json;$(ProjectDir)application\core;$(ProjectDir)application\debug;$(ProjectDir)application\scenes;$(ProjectDir)application\sceneSystem;$(ProjectDir)engine\audio;$(ProjectDir)engine\gameplay;$(ProjectDir)engine\spriteCamera;$(ProjectDir)engine\utils;$(ProjectDir)engine\worldTransform;$(ProjectDir)engine\utils\json;$(ProjectDir)externals\imgui;$(ProjectDir)engine\render\skybox;$(ProjectDir)engine\graphics\texture;$(ProjectDir)engine\3D\lights;$(ProjectDir)engine\render\postEffect</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -117,6 +117,10 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="engine\3D\lights\AmbientLight.cpp" />
+    <ClCompile Include="engine\3D\AnimatedModel.cpp" />
+    <ClCompile Include="engine\3D\lights\AreaLight.cpp" />
+    <ClCompile Include="engine\3D\lights\DirectionalLight.cpp" />
     <ClCompile Include="engine\3D\Animator.cpp" />
     <ClCompile Include="application\Base\DirectXCommon.cpp" />
     <ClCompile Include="application\Base\FPSLimiter.cpp" />
@@ -131,7 +135,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\camera\Camera.cpp" />
     <ClCompile Include="engine\2D\Sprite.cpp" />
     <ClCompile Include="engine\2D\SpriteCommon.cpp" />
-    <ClCompile Include="engine\3D\Model.cpp" />
+    <ClCompile Include="engine\3D\StaticModel.cpp" />
     <ClCompile Include="engine\3D\ModelCommon.cpp" />
     <ClCompile Include="engine\3D\ModelManager.cpp" />
     <ClCompile Include="engine\3D\Object3d.cpp" />
@@ -163,8 +167,20 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\graphics\texture\TextureUploader.cpp" />
     <ClCompile Include="engine\3D\Skeleton.cpp" />
     <ClCompile Include="engine\3D\SkinCluster.cpp" />
+    <ClCompile Include="application\Base\PostProcessManager.cpp" />
+    <ClCompile Include="engine\render\postEffect\GrayscaleEffect.cpp" />
+    <ClCompile Include="engine\3D\lights\LightManager.cpp" />
+    <ClCompile Include="engine\3D\lights\PointLight.cpp" />
+    <ClCompile Include="engine\3D\Prop.cpp" />
+    <ClCompile Include="engine\render\postEffect\RadialBlurEffect.cpp" />
+    <ClCompile Include="engine\3D\lights\SpotLight.cpp" />
+    <ClCompile Include="engine\render\postEffect\VignetteEffect.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="engine\3D\lights\AmbientLight.h" />
+    <ClInclude Include="engine\3D\AnimatedModel.h" />
+    <ClInclude Include="engine\3D\lights\AreaLight.h" />
+    <ClInclude Include="engine\3D\lights\DirectionalLight.h" />
     <ClInclude Include="engine\3D\Animator.h" />
     <ClInclude Include="application\sceneSystem\AbstractSceneFactory.h" />
     <ClInclude Include="application\Base\DirectXCommon.h" />
@@ -181,7 +197,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\camera\Camera.h" />
     <ClInclude Include="engine\2D\Sprite.h" />
     <ClInclude Include="engine\2D\SpriteCommon.h" />
-    <ClInclude Include="engine\3D\Model.h" />
+    <ClInclude Include="engine\3D\StaticModel.h" />
     <ClInclude Include="engine\3D\ModelCommon.h" />
     <ClInclude Include="engine\3D\ModelManager.h" />
     <ClInclude Include="engine\3D\Object3d.h" />
@@ -220,6 +236,18 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\graphics\texture\TextureUploader.h" />
     <ClInclude Include="engine\3D\Skeleton.h" />
     <ClInclude Include="engine\3D\SkinCluster.h" />
+    <ClInclude Include="application\Base\PostProcessManager.h" />
+    <ClInclude Include="engine\render\postEffect\GrayscaleEffect.h" />
+    <ClInclude Include="engine\3D\lights\ILight.h" />
+    <ClInclude Include="engine\3D\IModel.h" />
+    <ClInclude Include="engine\render\postEffect\IPostEffect.h" />
+    <ClInclude Include="engine\3D\lights\LightManager.h" />
+    <ClInclude Include="engine\3D\ModelTypes.h" />
+    <ClInclude Include="engine\3D\lights\PointLight.h" />
+    <ClInclude Include="engine\3D\Prop.h" />
+    <ClInclude Include="engine\render\postEffect\RadialBlurEffect.h" />
+    <ClInclude Include="engine\3D\lights\SpotLight.h" />
+    <ClInclude Include="engine\render\postEffect\VignetteEffect.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="externals\DirectXTex\DirectXTex_Desktop_2022_Win10.vcxproj">
@@ -265,6 +293,10 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="resources\shaders\Grayscale.VS.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="resources\shaders\Object3dAnimated.VS.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </FxCompile>

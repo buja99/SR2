@@ -33,6 +33,7 @@ void Object3dCommon::Finalize() {
 	stencilMaskPipelineState_.Reset();
 	stencilMaskRootSignature_.Reset();
 	stencilTestPipelineState_.Reset();
+	graphicsPipelineStateAnimated_.Reset();
 	rootSignature.Reset();
 	graphicsPipelineState.Reset();
 	stencilMaskVertexBuffer_.Reset();
@@ -108,7 +109,6 @@ void Object3dCommon::SetStencilWritePipeline() {
 }
 
 
-
 IDxcBlob* Object3dCommon::CompileShader(const std::wstring& filePath, const wchar_t* profile, IDxcUtils* dxcUtils, IDxcCompiler3* dxcCompiler, IDxcIncludeHandler* includeHandler)
 {
 	//hlsl
@@ -182,7 +182,7 @@ void Object3dCommon::CreateRootSignature()
 	descriptionRootSignature.Flags =
 		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 	//複数設定できるので配列。今回は結果１つだけなので長さ1の配列
-	D3D12_ROOT_PARAMETER rootParameters[11] = {};
+	D3D12_ROOT_PARAMETER rootParameters[12] = {};
 	// b0: Material Constant Buffer
 	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; //CBVを使う
 	rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; //PixelShaderで使う
@@ -229,6 +229,11 @@ void Object3dCommon::CreateRootSignature()
 	rootParameters[10].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 	rootParameters[10].DescriptorTable.pDescriptorRanges = &descriptorRange[1];
 	rootParameters[10].DescriptorTable.NumDescriptorRanges = 1;
+
+	rootParameters[11].ParameterType = D3D12_ROOT_PARAMETER_TYPE_SRV;
+	rootParameters[11].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+	rootParameters[11].Descriptor.ShaderRegister = 0;
+	rootParameters[11].Descriptor.RegisterSpace = 0;
 
 	descriptionRootSignature.pParameters = rootParameters; //rootParameters配列へのポインタ
 	descriptionRootSignature.NumParameters = _countof(rootParameters); //配列の長さ
@@ -289,7 +294,9 @@ void Object3dCommon::CreateGraphicsPipeline()
 		L"ps_6_0", dxcUtils, dxcCompiler, includeHandler);
 	assert(pixelShaderBlob != nullptr);
 
-
+	ComPtr<IDxcBlob> vertexShaderAnimatedBlob = CompileShader(L"resources/shaders/Object3dAnimated.VS.hlsl",
+		L"vs_6_0", dxcUtils, dxcCompiler, includeHandler);
+	assert(vertexShaderAnimatedBlob != nullptr);
 
 
 	// InputLayout
@@ -355,6 +362,23 @@ void Object3dCommon::CreateGraphicsPipeline()
 		IID_PPV_ARGS(&graphicsPipelineState));
 	assert(SUCCEEDED(hr));
 
+	D3D12_INPUT_ELEMENT_DESC inputElementDescsAnimated[] = {
+		{ "POSITION",     0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD",     0, DXGI_FORMAT_R32G32_FLOAT,        0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "NORMAL",       0, DXGI_FORMAT_R32G32B32_FLOAT,     0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "WEIGHT",       0, DXGI_FORMAT_R32G32B32A32_FLOAT,  0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "BONE_INDICES", 0, DXGI_FORMAT_R32G32B32A32_SINT,   0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+	};
+
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDescAnimated = graphicsPipelineStateDesc;
+
+	psoDescAnimated.InputLayout.pInputElementDescs = inputElementDescsAnimated;
+	psoDescAnimated.InputLayout.NumElements = _countof(inputElementDescsAnimated);
+
+	psoDescAnimated.VS = { vertexShaderAnimatedBlob->GetBufferPointer(), vertexShaderAnimatedBlob->GetBufferSize() };
+
+	hr = device->CreateGraphicsPipelineState(&psoDescAnimated, IID_PPV_ARGS(&graphicsPipelineStateAnimated_));
+	assert(SUCCEEDED(hr));
 }
 
 void Object3dCommon::CreateStencilWritePipeline() {

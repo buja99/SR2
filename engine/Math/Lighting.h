@@ -2,14 +2,14 @@
 #include "Vector3.h"
 #include "Vector4.h"
 
-struct DirectionalLight
+struct DirectionalLightData
 {
 	Vector4 color;
 	Vector3 direction;
 	float intensity;
 };
 
-struct PointLight {
+struct PointLightData {
 	Vector4 color;
 	Vector3 position;
 	float intensity;
@@ -17,7 +17,7 @@ struct PointLight {
 	float decay;
 	float padding[2];
 };
-struct SpotLight {
+struct SpotLightData {
 	Vector4 color;      // 16B
 
 	Vector3 position;   // 12B
@@ -32,11 +32,11 @@ struct SpotLight {
 	float padding;      // 4B → 정렬용
 };
 
-struct AmbientLight {
+struct AmbientLightData {
 	Vector4 color;
 };
 
-struct AreaLight {
+struct AreaLightData {
 	Vector4 color;           // 16B
 
 	Vector3 position;        // 12B

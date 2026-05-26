@@ -8,6 +8,9 @@
 #endif // _DEBUG
 #include "TextureUploader.h"
 #include "StringUtility.h"
+#include "LightManager.h"
+#include "ResourceUtils.h"
+
 using namespace StringUtility;
 
 Object3d::~Object3d() {
@@ -26,146 +29,74 @@ void Object3d::Initialize(Object3dCommon* object3dCommon, WorldTransform* worldT
 	transform = { {1.0f,1.0f,1.0f},{0.0f,3.14f,0.0f},{0.0f,0.0f,10.0f} };
 	cameraTransform = { {1.0f,1.0f,1.0f},{0.3f,0.0f,0.0f},{0.0f,4.0f,-10.0f} };
 
-	cameraResource_ = CreateBufferResource(object3dCommon_->GetDxCommon()->GetDevice(), sizeof(CameraForGPU));
+	cameraResource_ = ResourceUtils::CreateBufferResource(object3dCommon_->GetDxCommon()->GetDevice(), sizeof(CameraForGPU));
 	cameraResource_->Map(0, nullptr, reinterpret_cast<void**>(&cameraData_));
 
 	InitializeTransformationMatrix();
-	InitializeLights();
 	InitializeMaterial();
 	//materialData_->useEnvironmentMap = 0;
 
 	this->camera = object3dCommon->GetDefaultCamera();
 }
 
-void Object3d::Update()
-{
+void Object3d::Update() {
 	if (!worldTransform_) {
 		return;
 	}
 
-	// 애니메이션 적용 시작
-	if (model_ && !model_->GetModelData().animations.empty()) {
-		static float time = 0.0f;
-		time += 1.0f / 60.0f; // 60fps 가정
-
-		const auto& anim = model_->GetModelData().animations[0];
-		if (anim.duration > 0.0f) {
-			const float localTime = fmodf(time, anim.duration);
-
-			// 1) 사용할 채널 선택: rootNode 이름 우선, 없으면 첫 채널
-			const std::string& rootName = model_->GetModelData().rootNode.name;
-			const AnimationChannel* useCh = nullptr;
-			for (const auto& ch : anim.channels) {
-				if (ch.nodeName == rootName) { useCh = &ch; break; }
-			}
-			if (!useCh && !anim.channels.empty()) useCh = &anim.channels[0];
-			if (useCh) {
-				// 2) 보간 유틸
-				auto sampleVec3 = [&](const std::vector<KeyframeVector3>& keys, float t, const Vector3& def) {
-					if (keys.empty()) return def;
-					if (keys.size() == 1) return keys[0].value;
-					size_t idx = 0;
-					while (idx + 1 < keys.size() && keys[idx + 1].time < t) ++idx;
-					const auto& k0 = keys[idx];
-					const auto& k1 = keys[std::min(idx + 1, keys.size() - 1)];
-					const float u = (t - k0.time) / (k1.time - k0.time + 0.0001f);
-					return MyMath::Lerp(k0.value, k1.value, u);
-					};
-				auto sampleQuat = [&](const std::vector<KeyframeQuaternion>& keys, float t, const Quaternion& def) {
-					if (keys.empty()) return def;
-					if (keys.size() == 1) return keys[0].value;
-					size_t idx = 0;
-					while (idx + 1 < keys.size() && keys[idx + 1].time < t) ++idx;
-					const auto& k0 = keys[idx];
-					const auto& k1 = keys[std::min(idx + 1, keys.size() - 1)];
-					const float u = (t - k0.time) / (k1.time - k0.time + 0.0001f);
-					return MyMath::Slerp(k0.value, k1.value, u);
-					};
-
-				//// 3) 현재 값(기본값)에서 키가 있는 트랙만 덮어쓰기
-				//Vector3    pos = sampleVec3(useCh->translate.keyframes, localTime, transform.translate);
-				//Vector3    scl = sampleVec3(useCh->scale.keyframes, localTime, transform.scale);
-				//Quaternion rot = sampleQuat(useCh->rotate.keyframes, localTime, MyMath::EulerToQuaternion(transform.rotate));
-
-				//// 4) transform에 반영
-				//transform.translate = pos;
-				//transform.scale = scl;
-				//transform.rotate = MyMath::QuaternionToEuler(rot);
-
-				Vector3    pos = transform.translate;
-
-				// 스케일과 회전만 애니에서 샘플링
-				Vector3    scl = sampleVec3(useCh->scale.keyframes, localTime, transform.scale);
-				Quaternion rot = sampleQuat(useCh->rotate.keyframes, localTime, MyMath::EulerToQuaternion(transform.rotate));
-
-				// 4) transform에 반영
-				transform.translate = pos;
-				transform.scale = scl;
-				transform.rotate = MyMath::QuaternionToEuler(rot);
-			}
-		}
+	// 🌟 [다형성 핵심 1] 옛날의 길고 복잡한 애니메이션 로직은 전부 삭제!
+	// 이제 모델이 스스로 업데이트하도록 시간(deltaTime)만 던져주면 끝입니다.
+	if (model_) {
+		model_->Update(1.0f / 60.0f); // (AnimatedModel이면 애니가 재생되고, Static이면 무시됨)
 	}
-	// 애니메이션 적용 끝 
 
-	// 애니메이션을 반영한 transform 값을 worldTransform에 전달
+	// Object3d의 transform 값을 worldTransform에 전달
 	worldTransform_->scale_ = transform.scale;
 	worldTransform_->rotate_ = transform.rotate;
 	worldTransform_->translate_ = transform.translate;
 
-	// 행렬 계산
+	// 월드 행렬 갱신
 	worldTransform_->UpdateMatrix();
 
-	// WVP 계산
+	// 🌟 [다형성 핵심 2] WVP 및 행렬 계산 간소화
+	// 이전에는 Object3d가 GetModelData().rootNode.localMatrix를 강제로 가져와서 곱했지만,
+	// 이제는 모델 내부의 DrawRecursive() 함수가 알아서 localMatrix를 곱해줍니다!
+	// 따라서 Object3d는 아주 단순하게 자신의 World 행렬만 세팅해두면 됩니다.
 	if (camera) {
 		const Matrix4x4& viewProj = camera->GetViewProjectionMatrix();
 
-		if (model_) {
-			// 계층 노드가 있을 경우 localMatrix 포함
-			Matrix4x4 modelMatrix = MyMath::Multiply(
-				model_->GetModelData().rootNode.localMatrix,
-				worldTransform_->matWorld_
-			);
-			transformationMatrixData->WVP = MyMath::Multiply(modelMatrix, viewProj);
-			transformationMatrixData->World = modelMatrix;
-			transformationMatrixData->WorldInverseTranspose = MyMath::Transpose(MyMath::Inverse(modelMatrix));
-		} else {
-			// fallback
-			transformationMatrixData->WVP = MyMath::Multiply(worldTransform_->matWorld_, viewProj);
-			transformationMatrixData->World = worldTransform_->matWorld_;
-			transformationMatrixData->WorldInverseTranspose = MyMath::Transpose(MyMath::Inverse(worldTransform_->matWorld_));
-		}
+		transformationMatrixData->WVP = MyMath::Multiply(worldTransform_->matWorld_, viewProj);
+		transformationMatrixData->World = worldTransform_->matWorld_;
+		transformationMatrixData->WorldInverseTranspose = MyMath::Transpose(MyMath::Inverse(worldTransform_->matWorld_));
 	}
 
+	// 카메라 위치 갱신 (반사/조명용)
 	if (camera && cameraData_) {
 		cameraData_->worldPosition = camera->GetEye();
 	}
-#ifdef _DEBUG
-	
-#endif // _DEBUG
 
+#ifdef _DEBUG
+	// 디버그 UI 등이 필요하다면 여기에 추가
+#endif // _DEBUG
 }
 
 void Object3d::Draw()
 {
 	if (!model_ || !object3dCommon_ || !camera || !worldTransform_) return;
 
-	//obj3d
-	object3dCommon_->GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResource_.Get()->GetGPUVirtualAddress());
-	object3dCommon_->GetCommandList()->SetGraphicsRootConstantBufferView(1, transformationMatrixResource.Get()->GetGPUVirtualAddress());	
-	object3dCommon_->GetCommandList()->SetGraphicsRootConstantBufferView(3, directionalLightResource_->GetGPUVirtualAddress());
-	object3dCommon_->GetCommandList()->SetGraphicsRootConstantBufferView(4, cameraResource_->GetGPUVirtualAddress());
-	object3dCommon_->GetCommandList()->SetGraphicsRootConstantBufferView(5, pointLightResource_->GetGPUVirtualAddress());
-	object3dCommon_->GetCommandList()->SetGraphicsRootConstantBufferView(6, spotLightResource_->GetGPUVirtualAddress());
-	object3dCommon_->GetCommandList()->SetGraphicsRootConstantBufferView(7, ambientLightResource_->GetGPUVirtualAddress());
-	object3dCommon_->GetCommandList()->SetGraphicsRootConstantBufferView(8, areaLightResource_->GetGPUVirtualAddress());
-	
-	if (materialData_ && materialData_->useEnvironmentMap != 0) {
-		object3dCommon_->GetCommandList()->SetGraphicsRootDescriptorTable(10, envMapSrvHandle_);
-	}
+	auto commandList = object3dCommon_->GetCommandList();
 
-	// 모델 그리기
+	// 1. 공통 셰이더 리소스 레지스터 바인딩 (Material, Transform, Camera, Light 등)
+	commandList->SetGraphicsRootConstantBufferView(0, materialResource_.Get()->GetGPUVirtualAddress());
+	commandList->SetGraphicsRootConstantBufferView(1, transformationMatrixResource.Get()->GetGPUVirtualAddress());
+	commandList->SetGraphicsRootConstantBufferView(4, cameraResource_->GetGPUVirtualAddress());
+	LightManager::GetInstance()->BindAll(commandList.Get());
+
+	// 2. 뷰 프로젝션 행렬 획득
 	const Matrix4x4& viewProj = camera->GetViewProjectionMatrix();
-	model_->DrawRecursive(model_->GetModelData().rootNode, worldTransform_->matWorld_, viewProj, transformationMatrixData);
+
+	// 
+	model_->Draw(worldTransform_->matWorld_, viewProj, transformationMatrixData);
 }
 
 void Object3d::Cleanup()
@@ -176,27 +107,6 @@ void Object3d::Cleanup()
 		transformationMatrixData = nullptr;
 	}
 
-	if (directionalLightResource_) {
-		directionalLightResource_.Reset();
-		directionalLightData_ = nullptr;
-	}
-
-	if (pointLightResource_) {
-		pointLightResource_.Reset();
-		pointLightData_ = nullptr;
-	}
-	if (spotLightResource_) {
-		spotLightResource_.Reset();
-		spotLightData_ = nullptr;
-	}
-	if (ambientLightResource_) {
-		ambientLightResource_.Reset();
-		ambientLightData_ = nullptr;
-	}
-	if (areaLightResource_) {
-		areaLightResource_.Reset();
-		areaLightData_ = nullptr;
-	}
 	if (cameraResource_) {
 		cameraResource_.Reset();         
 		cameraData_ = nullptr;
@@ -210,15 +120,13 @@ void Object3d::Cleanup()
 	camera = nullptr;
 	defaultCamera = nullptr;
 	transformationMatrixData = nullptr;
-	directionalLightData_ = nullptr;
-	pointLightData_ = nullptr;
 	cameraData_ = nullptr;
 }
 
 void Object3d::InitializeMaterial() {
 
 	auto device = object3dCommon_->GetDxCommon()->GetDevice();
-	materialResource_ = CreateBufferResource(device, sizeof(Material));
+	materialResource_ = ResourceUtils::CreateBufferResource(device, sizeof(Material));
 	materialResource_->Map(0, nullptr, reinterpret_cast<void**>(&materialData_));
 
 	// 조명 및 머티리얼 초기 설정
@@ -235,32 +143,7 @@ void Object3d::InitializeMaterial() {
 }
 
 
-ComPtr<ID3D12Resource> Object3d::CreateBufferResource(ComPtr<ID3D12Device> device, size_t sizeInBytes)
-{
-	//頂点Heap
-	D3D12_HEAP_PROPERTIES uploadHeapProperties{};
-	uploadHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
-	//頂点Resource
-	D3D12_RESOURCE_DESC vertexResourceDesc{};
-	vertexResourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-	vertexResourceDesc.Width = sizeInBytes;
 
-	vertexResourceDesc.Height = 1;
-	vertexResourceDesc.DepthOrArraySize = 1;
-	vertexResourceDesc.MipLevels = 1;
-	vertexResourceDesc.SampleDesc.Count = 1;
-
-	vertexResourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-
-	ComPtr<ID3D12Resource> vertexResource = nullptr;
-	HRESULT hr = device->CreateCommittedResource(&uploadHeapProperties, D3D12_HEAP_FLAG_NONE,
-		&vertexResourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr,
-		IID_PPV_ARGS(&vertexResource));
-	assert(SUCCEEDED(hr));
-	vertexResource->SetName(L"bufferResource");
-
-	return vertexResource;
-}
 
 void Object3d::SetModel(const std::string& filePath)
 {
@@ -300,38 +183,7 @@ void Object3d::SetTextureDDS2D(const std::string& filePath) {
 	}
 }
 
-void Object3d::SetPointLight(const Vector3& position, float intensity, float radius, float decay) {
-	if (pointLightData_) {
-		pointLightData_->position = position;
-		pointLightData_->intensity = intensity;
-		pointLightData_->radius = radius;
-		pointLightData_->decay = decay;
-	}
-}
 
-void Object3d::SetSpotLight(const Vector3& position, const Vector3& direction, float intensity, float cutoff, float outerCutoff, float decay, float radius) {
-	if (spotLightData_) {
-		spotLightData_->position = position;
-		spotLightData_->direction = direction;
-		spotLightData_->intensity = intensity;
-		spotLightData_->cutoff = cutoff;
-		spotLightData_->outerCutoff = outerCutoff;
-		spotLightData_->decay = decay;
-		spotLightData_->radius = radius;
-	}
-}
-
-void Object3d::SetAreaLight(const Vector3& position, const Vector3& right, float halfWidth, const Vector3& up, float halfHeight, const Vector4& color, float intensity) {
-	if (areaLightData_) {
-		areaLightData_->position = position;
-		areaLightData_->right = right;
-		areaLightData_->halfWidth = halfWidth;
-		areaLightData_->up = up;
-		areaLightData_->halfHeight = halfHeight;
-		areaLightData_->color = color;
-		areaLightData_->intensity = intensity;
-	}
-}
 
 void Object3d::SetEnableLighting(bool enable) {
 	if (materialData_) materialData_->enableLighting = enable;
@@ -407,7 +259,7 @@ void Object3d::InitializeTransformationMatrix()
 
 	auto device = object3dCommon_->GetDxCommon()->GetDevice();
 
-	transformationMatrixResource = CreateBufferResource(device.Get(), sizeof(TransformationMatrix));
+	transformationMatrixResource = ResourceUtils::CreateBufferResource(device.Get(), sizeof(TransformationMatrix));
 
 	transformationMatrixResource.Get()->Map(0, nullptr, reinterpret_cast<void**>(&transformationMatrixData));
 
@@ -415,58 +267,4 @@ void Object3d::InitializeTransformationMatrix()
 	transformationMatrixData->World = MyMath::MakeIdentity4x4();
 }
 
-void Object3d::InitializeLights()
-{
-	auto device = object3dCommon_->GetDxCommon()->GetDevice();
 
-	// Directional
-	directionalLightResource_ = CreateBufferResource(device, sizeof(DirectionalLight));
-	directionalLightResource_->Map(0, nullptr, (void**)&directionalLightData_);
-	directionalLightData_->color = { 1.0f, 1.0f, 1.0f, 1.0f };
-	directionalLightData_->direction = { 0.0f, -1.0f, 0.0f };
-	directionalLightData_->intensity = 1.0f;
-
-	// Point
-	pointLightResource_ = CreateBufferResource(device, sizeof(PointLight));
-	pointLightResource_->Map(0, nullptr, (void**)&pointLightData_);
-	pointLightData_->color = { 1.0f, 1.0f, 1.0f, 1.0f };
-	pointLightData_->position = { 0.0f, 5.0f, 0.0f };
-	pointLightData_->intensity = 1.0f;
-	pointLightData_->radius = 10.0f;
-	pointLightData_->decay = 1.0f;
-
-	// Spot
-	spotLightResource_ = CreateBufferResource(device, sizeof(SpotLight));
-	spotLightResource_->Map(0, nullptr, (void**)&spotLightData_);
-	spotLightData_->color = { 1.0f, 1.0f, 1.0f, 1.0f };
-	spotLightData_->position = { 0.0f, 5.0f, 5.0f };     // 빛 위치
-	spotLightData_->direction = { 0.0f, -1.0f, -1.0f };  // 빛 방향
-	spotLightData_->intensity = 1.0f;
-	spotLightData_->cutoff = cosf(MyMath::ToRadian(15.0f));        // 내부 각도 (15도)
-	spotLightData_->outerCutoff = cosf(MyMath::ToRadian(30.0f));   // 외부 각도 (30도)
-	spotLightData_->radius = 15.0f;
-	spotLightData_->decay = 1.0f;
-
-	// Ambient
-	ambientLightResource_ = CreateBufferResource(device, sizeof(AmbientLight));
-	ambientLightResource_->Map(0, nullptr, (void**)&ambientLightData_);
-	ambientLightData_->color = { 0.1f, 0.1f, 0.1f, 1.0f }; // Ambient Light Color
-
-	//Area
-	areaLightResource_ = CreateBufferResource(device, sizeof(AreaLight));
-	areaLightResource_->Map(0, nullptr, (void**)&areaLightData_);
-	areaLightData_->color = { 1.0f, 1.0f, 1.0f, 1.0f };
-	// 중심 위치
-	areaLightData_->position = { 0.0f, 5.0f, 0.0f };
-
-	// 가로 방향 벡터 (x축 기준)
-	areaLightData_->right = { 1.0f, 0.0f, 0.0f };
-	areaLightData_->halfWidth = 2.0f;
-
-	// 세로 방향 벡터 (y축 기준)
-	areaLightData_->up = { 0.0f, 1.0f, 0.0f };
-	areaLightData_->halfHeight = 2.0f;
-
-	areaLightData_->intensity = 1.0f;
-	
-}

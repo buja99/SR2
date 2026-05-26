@@ -1,11 +1,11 @@
-#include "Model.h"
+#include "StaticModel.h"
 #include <fstream>
 #include "imgui.h"
+#include "AnimatedModel.h"
+#include "ResourceUtils.h"
 
-void Model::Initialize(ModelCommon* modelCommon, Object3dCommon* object3dCommon, const std::string& directorypath, const std::string& filename)
+void StaticModel::Initialize(Object3dCommon* object3dCommon, const std::string& directorypath, const std::string& filename)
 {
-
-	modelCommon_ = modelCommon;
 
 	this->object3dCommon_ = object3dCommon;
 
@@ -25,7 +25,7 @@ void Model::Initialize(ModelCommon* modelCommon, Object3dCommon* object3dCommon,
 
 }
 
-void Model::Draw()
+void StaticModel::Draw(const Matrix4x4& worldMatrix, const Matrix4x4& viewProj, TransformationMatrix* transformData)
 {
 
 	// 1) VertexBuffer 설정
@@ -53,7 +53,7 @@ void Model::Draw()
 
 }
 
-void Model::Cleanup()
+void StaticModel::Cleanup()
 {
 	if (vertexResource_) {
 		vertexResource_.Reset();
@@ -70,11 +70,11 @@ void Model::Cleanup()
 	ZeroMemory(&vertexBufferView_, sizeof(vertexBufferView_));
 	ZeroMemory(&indexBufferView_, sizeof(indexBufferView_));
 	object3dCommon_ = nullptr;
-	modelCommon_ = nullptr;
+
 	
 }
 
-ModelData Model::LoadModelFile(const std::string& directoryPath, const std::string& filename)
+ModelData StaticModel::LoadModelFile(const std::string& directoryPath, const std::string& filename)
 {
 	Assimp::Importer importer;
 
@@ -100,7 +100,7 @@ ModelData Model::LoadModelFile(const std::string& directoryPath, const std::stri
 			aiVector3D norm = mesh->HasNormals() ? mesh->mNormals[v] : aiVector3D(0, 1, 0);
 			aiVector3D tex = mesh->HasTextureCoords(0) ? mesh->mTextureCoords[0][v] : aiVector3D(0, 0, 0);
 
-			VertexData out{};
+			VertexDataStatic out{};
 			out.position = { pos.x, pos.y, pos.z, 1.0f };
 			out.normal = { norm.x, norm.y, norm.z };
 			out.texCoord = { tex.x, tex.y };
@@ -207,7 +207,7 @@ ModelData Model::LoadModelFile(const std::string& directoryPath, const std::stri
 	return modelData;
 }
 
-MaterialData Model::LoadMaterialTemplateFile(const std::string& directoryPath, const std::string& filename)
+MaterialData StaticModel::LoadMaterialTemplateFile(const std::string& directoryPath, const std::string& filename)
 {
 	MaterialData materialData;
 	std::string line;
@@ -234,34 +234,9 @@ MaterialData Model::LoadMaterialTemplateFile(const std::string& directoryPath, c
 	return materialData;
 }
 
-ComPtr<ID3D12Resource> Model::CreateBufferResource(ComPtr<ID3D12Device> device, size_t sizeInBytes)
-{
-	//頂点Heap
-	D3D12_HEAP_PROPERTIES uploadHeapProperties{};
-	uploadHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
-	//頂点Resource
-	D3D12_RESOURCE_DESC vertexResourceDesc{};
-	vertexResourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-	vertexResourceDesc.Width = sizeInBytes;
 
-	vertexResourceDesc.Height = 1;
-	vertexResourceDesc.DepthOrArraySize = 1;
-	vertexResourceDesc.MipLevels = 1;
-	vertexResourceDesc.SampleDesc.Count = 1;
 
-	vertexResourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-
-	ComPtr<ID3D12Resource> vertexResource = nullptr;
-	HRESULT hr = device->CreateCommittedResource(&uploadHeapProperties, D3D12_HEAP_FLAG_NONE,
-		&vertexResourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr,
-		IID_PPV_ARGS(&vertexResource));
-	assert(SUCCEEDED(hr));
-	vertexResource->SetName(L"bufferResource");
-
-	return vertexResource;
-}
-
-Node Model::ReadNode(aiNode* ainode) {
+Node StaticModel::ReadNode(aiNode* ainode) {
 	Node node;
 
 	node.name = ainode->mName.C_Str();
@@ -286,7 +261,7 @@ Node Model::ReadNode(aiNode* ainode) {
 	return node;
 }
 
-void Model::DrawRecursive(
+void StaticModel::DrawRecursive(
 	const Node& node,
 	const Matrix4x4& parentMatrix,
 	const Matrix4x4& viewProj,
@@ -395,8 +370,11 @@ void Model::DrawRecursive(
 
 
 
-void Model::InitializeIndexBuffer(const ModelData& modelData) {
-	auto device = modelCommon_->GetDxCommon()->GetDevice();
+void StaticModel::InitializeIndexBuffer(const ModelData& modelData) {
+	assert(object3dCommon_ != nullptr);
+	assert(object3dCommon_->GetDxCommon() != nullptr);
+
+	auto device = object3dCommon_->GetDxCommon()->GetDevice();
 
 	// 인덱스가 하나도 없으면 아무 것도 하지 않음
 	if (modelData.indices.empty()) {
@@ -409,7 +387,7 @@ void Model::InitializeIndexBuffer(const ModelData& modelData) {
 	const UINT bufferSize = sizeof(uint32_t) * indexCount;
 
 	// 업로드 버퍼 생성 (VertexBuffer 만들 때 쓰는 CreateBufferResource 함수 재사용)
-	indexResource_ = CreateBufferResource(
+	indexResource_ = ResourceUtils::CreateBufferResource(
 		device.Get(),
 		bufferSize);
 
@@ -427,32 +405,36 @@ void Model::InitializeIndexBuffer(const ModelData& modelData) {
 }
 
 
-void Model::InitializeVertexBuffer()
+void StaticModel::InitializeVertexBuffer()
 {
-	auto device = modelCommon_->GetDxCommon()->GetDevice();
+	assert(object3dCommon_ != nullptr);
+	assert(object3dCommon_->GetDxCommon() != nullptr);
+
+	auto device = object3dCommon_->GetDxCommon()->GetDevice();
 
 	// 정점이 하나도 없으면 만들지 않음
 	if (modelData.vertices.empty()) {
 		vertexResource_.Reset();
 		ZeroMemory(&vertexBufferView_, sizeof(vertexBufferView_));
+		OutputDebugStringA("Warning: Vertex data is empty for this model.\n");
 		return;
 	}
 
 	const size_t vertexCount = modelData.vertices.size();
-	const UINT   bufferSize = static_cast<UINT>(sizeof(VertexData) * vertexCount);
+	const UINT   bufferSize = static_cast<UINT>(sizeof(VertexDataStatic) * vertexCount);
 
 	// 업로드 버퍼 생성
-	vertexResource_ = CreateBufferResource(
+	vertexResource_ = ResourceUtils::CreateBufferResource(
 		device.Get(),
 		bufferSize);
 
 	// View 설정
 	vertexBufferView_.BufferLocation = vertexResource_->GetGPUVirtualAddress();
 	vertexBufferView_.SizeInBytes = bufferSize;
-	vertexBufferView_.StrideInBytes = sizeof(VertexData);
+	vertexBufferView_.StrideInBytes = sizeof(VertexDataStatic);
 
 	// 데이터 복사
-	VertexData* mapped = nullptr;
+	VertexDataStatic* mapped = nullptr;
 	HRESULT hr = vertexResource_->Map(0, nullptr, reinterpret_cast<void**>(&mapped));
 	assert(SUCCEEDED(hr));
 	memcpy(mapped, modelData.vertices.data(), bufferSize);
@@ -461,11 +443,16 @@ void Model::InitializeVertexBuffer()
 
 }
 
-void Model::InitializeMaterial()
-{
-	auto device = modelCommon_->GetDxCommon()->GetDevice();
 
-	materialResource_ = CreateBufferResource(device.Get(), sizeof(Material));
+
+void StaticModel::InitializeMaterial()
+{
+	assert(object3dCommon_ != nullptr);
+	assert(object3dCommon_->GetDxCommon() != nullptr);
+
+	auto device = object3dCommon_->GetDxCommon()->GetDevice();
+
+	materialResource_ = ResourceUtils::CreateBufferResource(device.Get(), sizeof(Material));
 
 	materialResource_.Get()->Map(0, nullptr, reinterpret_cast<void**>(&materialData_));
 

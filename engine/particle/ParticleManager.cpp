@@ -1,8 +1,8 @@
 #include "ParticleManager.h"
 #include "Logger.h"
 #include "StringUtility.h"
-#include <Model.h>
-
+#include "StaticModel.h"
+#include "ResourceUtils.h"
 
 
 using namespace Logger;
@@ -293,7 +293,7 @@ void ParticleManager::CreateParticleGroup(const std::string& name, const std::st
 
 	particleGroups[name] = std::move(newGroup);
 
-	newGroup.instanceBuffer = CreateBufferResource(dxCommon_->GetDevice(), sizeof(ParticleForGPU) * kNumMaxInstance);
+	newGroup.instanceBuffer = ResourceUtils::CreateBufferResource(dxCommon_->GetDevice(), sizeof(ParticleForGPU) * kNumMaxInstance);
 
 	// 리소스 매핑
 	HRESULT hr = newGroup.instanceBuffer->Map(0, nullptr, reinterpret_cast<void**>(&newGroup.mappedInstanceData));
@@ -353,31 +353,7 @@ void ParticleManager::SetEmitterCount(const std::string& name, uint32_t count) {
 void ParticleManager::RegisterGenerator(const std::string& name, const ParticleGenerator& generator) {
 	generators_[name] = generator;
 }
-ComPtr<ID3D12Resource> ParticleManager::CreateBufferResource(ComPtr<ID3D12Device> device, size_t sizeInBytes) {
-	//頂点Heap
-	D3D12_HEAP_PROPERTIES uploadHeapProperties{};
-	uploadHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
-	//頂点Resource
-	D3D12_RESOURCE_DESC vertexResourceDesc{};
-	vertexResourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-	vertexResourceDesc.Width = sizeInBytes;
 
-	vertexResourceDesc.Height = 1;
-	vertexResourceDesc.DepthOrArraySize = 1;
-	vertexResourceDesc.MipLevels = 1;
-	vertexResourceDesc.SampleDesc.Count = 1;
-
-	vertexResourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-
-	ComPtr<ID3D12Resource> vertexResource = nullptr;
-	HRESULT hr = device->CreateCommittedResource(&uploadHeapProperties, D3D12_HEAP_FLAG_NONE,
-		&vertexResourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr,
-		IID_PPV_ARGS(&vertexResource));
-	assert(SUCCEEDED(hr));
-	vertexResource->SetName(L"bufferResource");
-
-	return vertexResource;
-}
 
 IDxcBlob* ParticleManager::CompileShader(const std::wstring& filePath, const wchar_t* profile, IDxcUtils* dxcUtils, IDxcCompiler3* dxcCompiler, IDxcIncludeHandler* includeHandler) {
 	//hlsl
@@ -663,7 +639,7 @@ void ParticleManager::CreateVertexBuffer() {
 	auto device = dxCommon_->GetDevice();
 
 	// GPU 메모리에 버퍼 생성(Create a buffer in GPU memory)
-	vertexBufferResource_ = CreateBufferResource(device, sizeof(ParticleVertex) * vertices_.size());
+	vertexBufferResource_ = ResourceUtils::CreateBufferResource(device, sizeof(ParticleVertex) * vertices_.size());
 	// 버퍼 뷰 설정(Setting the buffer view)
 	vertexBufferView_.BufferLocation = vertexBufferResource_->GetGPUVirtualAddress();
 	vertexBufferView_.SizeInBytes = static_cast<UINT>(sizeof(ParticleVertex) * vertices_.size());

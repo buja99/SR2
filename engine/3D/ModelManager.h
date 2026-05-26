@@ -4,7 +4,7 @@
 #include <memory>
 
 
-class Model;
+class IModel;
 class DirectXCommon;
 class ModelCommon;
 class Object3dCommon;
@@ -23,14 +23,14 @@ public:
 
     void LoadModel(const std::string& directorypath, const std::string& filePath);
 
-    Model* FindModel(const std::string& filePath);
+    IModel* FindModel(const std::string& filePath);
 
     void Finalize();
 
 private:
     static ModelManager* instance;
 
-    std::map<std::string, std::unique_ptr<Model>> models_;
+    std::map<std::string, std::unique_ptr<IModel>> models_;
 
     std::unique_ptr<ModelCommon> modelCommon;
     Object3dCommon* object3dCommon;

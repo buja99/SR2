@@ -34,7 +34,6 @@ public:
 
 	void SetStencilWritePipeline();
 
-
 	DirectXCommon* GetDxCommon() const { return dxCommon_; }
 
 
@@ -57,6 +56,8 @@ public:
 	ComPtr<ID3D12RootSignature> GetRootSignature() const { return rootSignature; }
 
 	ComPtr<ID3D12Resource> GetPlayerRangeCB() const { return playerRangeCB_; }
+
+	ComPtr<ID3D12PipelineState> GetGraphicsPipelineStateAnimated() const { return graphicsPipelineStateAnimated_; }
 
 private:
 
@@ -97,5 +98,6 @@ private:
 
 	ComPtr<ID3D12Resource> playerRangeCB_;
 
+	ComPtr<ID3D12PipelineState> graphicsPipelineStateAnimated_;
 };
 

@@ -3,7 +3,7 @@
 #include <cassert>
 #include "Skeleton.h"
 #include "MyMath.h"
-#include "Model.h"
+#include "StaticModel.h"
 
 void Animator::Play(const AnimationData& anim, bool loop, float startTime) {
     currentAnim_ = &anim;
@@ -57,7 +57,7 @@ void Animator::Update(float deltaTime, Skeleton& skeleton) {
             size_t idx = 0;
             while (idx + 1 < keys.size() && keys[idx + 1].time < time_) ++idx;
             const auto& k0 = keys[idx];
-            const auto& k1 = keys[std::min(idx + 1, keys.size() - 1)];
+            const auto& k1 = keys[(std::min<size_t>)(idx + 1, keys.size() - 1)];
             float t = (time_ - k0.time) / (k1.time - k0.time + 0.0001f);
             pos = MyMath::Lerp(k0.value, k1.value, t);
         }
@@ -68,7 +68,7 @@ void Animator::Update(float deltaTime, Skeleton& skeleton) {
             size_t idx = 0;
             while (idx + 1 < keys.size() && keys[idx + 1].time < time_) ++idx;
             const auto& k0 = keys[idx];
-            const auto& k1 = keys[std::min(idx + 1, keys.size() - 1)];
+            const auto& k1 = keys[(std::min<size_t>)(idx + 1, keys.size() - 1)];
             float t = (time_ - k0.time) / (k1.time - k0.time + 0.0001f);
             scl = MyMath::Lerp(k0.value, k1.value, t);
         }
@@ -79,7 +79,7 @@ void Animator::Update(float deltaTime, Skeleton& skeleton) {
             size_t idx = 0;
             while (idx + 1 < keys.size() && keys[idx + 1].time < time_) ++idx;
             const auto& k0 = keys[idx];
-            const auto& k1 = keys[std::min(idx + 1, keys.size() - 1)];
+            const auto& k1 = keys[(std::min<size_t>)(idx + 1, keys.size() - 1)];
             float t = (time_ - k0.time) / (k1.time - k0.time + 0.0001f);
             rot = MyMath::Slerp(k0.value, k1.value, t);
         }

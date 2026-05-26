@@ -12,7 +12,7 @@
 #include "Sound.h"
 #include "WorldTransform.h"
 #include "ParticleEffectLibrary.h"
-
+#include "Prop.h"
 
 class TitleScene : public BaseScene {
 
@@ -38,24 +38,19 @@ private:
 	std::unique_ptr<Sprite> title = nullptr;
 
 
-	std::unique_ptr<Object3d> model_ = nullptr;
-	std::unique_ptr<WorldTransform> worldTransform_ = nullptr;
+	std::unique_ptr<Prop> model_ = nullptr;
+	
 
 	std::unique_ptr<Camera> camera_ = nullptr;
 
-	std::unique_ptr<Object3d> testModel_ = nullptr;
-	std::unique_ptr<WorldTransform> testWorldTransform_ = nullptr;
+	std::unique_ptr<Prop> testModel_ = nullptr;
+	
 
 
 	std::mt19937 randomEngine_;
 
 	Emitter primitiveEmit_{};
 	Emitter ringEmit_{};
-
-	//postEffect
-	bool useGrayscale_ = true;
-	bool useVignette_ = false;
-	bool useRadialBlur_ = false;
 
 	std::unique_ptr<ParticleEffectLibrary> effectLibrary_;
 

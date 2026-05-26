@@ -1,6 +1,9 @@
 #include "LevelObjectBuilder.h"
 #include "ModelManager.h"
 #include <iostream>
+#include "Object3dCommon.h"
+#include "DirectXCommon.h"
+#include "Object3d.h"
 
 void LevelObjectBuilder::BuildFromJson(
     const LevelData* levelData,

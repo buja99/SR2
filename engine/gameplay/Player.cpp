@@ -1,6 +1,10 @@
 #include "Player.h"
 #include <algorithm>
 #include "ImGuiManager.h"
+#include "Object3dCommon.h"
+#include "ModelManager.h"
+#include "DirectXCommon.h"
+#include "Object3d.h"
 
 Player::~Player() {
 }

@@ -72,7 +72,7 @@
     <ClCompile Include="engine\2D\SpriteCommon.cpp">
       <Filter>engine\2D</Filter>
     </ClCompile>
-    <ClCompile Include="engine\3D\Model.cpp">
+    <ClCompile Include="engine\3D\StaticModel.cpp">
       <Filter>engine\3D</Filter>
     </ClCompile>
     <ClCompile Include="engine\3D\ModelCommon.cpp">
@@ -183,6 +183,42 @@
     <ClCompile Include="engine\3D\SkinCluster.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
+    <ClCompile Include="application\Base\PostProcessManager.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\render\postEffect\GrayscaleEffect.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\render\postEffect\VignetteEffect.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\render\postEffect\RadialBlurEffect.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\3D\lights\DirectionalLight.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\3D\lights\LightManager.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\3D\lights\PointLight.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\3D\lights\SpotLight.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\3D\lights\AmbientLight.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\3D\lights\AreaLight.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\3D\AnimatedModel.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\3D\Prop.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="application\Base\DirectXCommon.h">
@@ -212,7 +248,7 @@
     <ClInclude Include="engine\2D\SpriteCommon.h">
       <Filter>engine\2D</Filter>
     </ClInclude>
-    <ClInclude Include="engine\3D\Model.h">
+    <ClInclude Include="engine\3D\StaticModel.h">
       <Filter>engine\3D</Filter>
     </ClInclude>
     <ClInclude Include="engine\3D\ModelCommon.h">
@@ -350,6 +386,54 @@
     <ClInclude Include="engine\3D\Bone.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
+    <ClInclude Include="application\Base\PostProcessManager.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\render\postEffect\IPostEffect.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\render\postEffect\GrayscaleEffect.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\render\postEffect\VignetteEffect.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\render\postEffect\RadialBlurEffect.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3D\lights\ILight.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3D\lights\DirectionalLight.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3D\lights\LightManager.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3D\lights\PointLight.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3D\lights\SpotLight.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3D\lights\AmbientLight.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3D\lights\AreaLight.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3D\IModel.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3D\AnimatedModel.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3D\ModelTypes.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3D\Prop.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="resources\shaders\Particle.hlsli" />
@@ -374,5 +458,6 @@
     <FxCompile Include="resources\shaders\Vignette.PS.hlsl" />
     <FxCompile Include="resources\shaders\Vignette.VS.hlsl" />
     <FxCompile Include="resources\shaders\RadialBlur.PS.hlsl" />
+    <FxCompile Include="resources\shaders\Object3dAnimated.VS.hlsl" />
   </ItemGroup>
 </Project>
