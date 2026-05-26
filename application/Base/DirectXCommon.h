@@ -11,7 +11,7 @@
 #include "FPSLimiter.h"
 #include <memory>
 #include "Vector4.h"
-#include "PostEffect.h"
+
 
 using Microsoft::WRL::ComPtr;
 
@@ -85,39 +85,12 @@ public:
 	void InitializeCopyPipeline();
 	void CopyRenderTextureToSwapChain();
 	void InitializeOffscreenDSV();
-	//Grayscale
-	void InitializeGrayscalePipeline();
-	void DrawGrayscaleToSwapChain();
-	void SetGrayscaleStrength(float strength);
-	bool IsGrayscaleEnabled() const { return useGrayscale_; }
-	void SetGrayscaleEnabled(bool enabled);
-	float GetGrayscaleStrength() const { return grayscaleSettings_.strength; }
-
-	//Vignette
-	void InitializeVignettePipeline(); 
-	void DrawVignetteToSwapChain();  
-	void SetVignetteEnabled(bool enabled);
-	bool IsVignetteEnabled() const { return useVignette_; }
-	void SetVignetteStrength(float strength);
-	float GetVignetteStrength() const { return vignetteSettings_.vignetteStrength; }
-
-	//RadialBlur
-	void InitializeRadialBlurPipeline();
-	void DrawRadialBlurToSwapChain();
-	void SetRadialBlurEnabled(bool enabled);
-	bool IsRadialBlurEnabled() const { return useRadialBlur_; }
-	void SetRadialBlurStrength(float strength);
-	float GetRadialBlurStrength() const { return radialBlurSettings_.blurStrength; }
-
-	int GetRadialBlurNumSamples() const;
-	void SetRadialBlurNumSamples(int);
-
-	float GetRadialBlurCenterX() const;
-	float GetRadialBlurCenterY() const;
-	void SetRadialBlurCenter(float x, float y);
-
+	
 	void SetViewport(float x, float y, float width, float height);
 	void SetScissorRect(int left, int top, int right, int bottom);
+
+	uint32_t GetOffscreenSRVIndex() const { return offscreenSRVIndex_; }
+
 private:
 
 	DirectXCommon() = default;
@@ -133,9 +106,7 @@ private:
 	DXGI_SWAP_CHAIN_DESC1 swapChainDesc{};
 
 	ComPtr<ID3D12Resource> depthStencilBuffer;
-	ComPtr<ID3D12DescriptorHeap> rtvHeap;
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandles[2];
-	UINT rtvDescriptorSize;
 	D3D12_RENDER_TARGET_VIEW_DESC rtvDesc{};
 
 	std::array<ComPtr<ID3D12Resource>, 2> swapChainResources;
@@ -150,7 +121,7 @@ private:
 	ComPtr<ID3D12Fence> fence;
 	uint64_t fenceValue = 0;
 	std::unique_ptr<void, decltype(&CloseHandle)> fenceEvent{ nullptr, CloseHandle };
-	UINT64 fenceVal = 0;
+	
 
 	D3D12_VIEWPORT viewport;
 	D3D12_RECT scissorRect;
@@ -172,25 +143,7 @@ private:
 	ComPtr<ID3D12RootSignature> copyRootSignature_;
 	ComPtr<ID3D12PipelineState> copyPipelineState_;
 	uint32_t offscreenSRVIndex_ = 0;
-	//Grayscale
-	ComPtr<ID3D12RootSignature> grayscaleRootSignature_;
-	ComPtr<ID3D12PipelineState> grayscalePipelineState_;
-	ComPtr<ID3D12Resource> grayscaleConstBuffer_;
-	GrayscaleSettings grayscaleSettings_ = { 1.0f }; 
-	D3D12_GPU_DESCRIPTOR_HANDLE grayscaleCbvHandle_;\
-	bool useGrayscale_ = true;
-	//Vignette
-	ComPtr<ID3D12RootSignature> vignetteRootSignature_;
-	ComPtr<ID3D12PipelineState> vignettePipelineState_;
-	bool useVignette_ = false;
-	VignetteSettings vignetteSettings_ = { 1.0f };
-	ComPtr<ID3D12Resource> vignetteConstBuffer_;
-	//RadialBlur
-	ComPtr<ID3D12RootSignature> radialBlurRootSignature_;
-	ComPtr<ID3D12PipelineState> radialBlurPipelineState_;
-	ComPtr<ID3D12Resource> radialBlurConstBuffer_;
-	RadialBlurSettings radialBlurSettings_; 
-	bool useRadialBlur_ = false;
+	
 
 };
 

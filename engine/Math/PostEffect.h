@@ -16,3 +16,10 @@ struct RadialBlurSettings {
     int   numSamples;    // int   4바이트
     float pad[3];
 };
+
+enum class PostEffectMode {
+    None,
+    Grayscale,
+    Vignette,
+    RadialBlur
+};

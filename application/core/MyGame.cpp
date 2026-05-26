@@ -1,5 +1,5 @@
 #include "MyGame.h"
-
+#include "PostProcessManager.h"
 
 
 void MyGame::Initialize() {
@@ -28,28 +28,31 @@ void MyGame::Update() {
 
 void MyGame::Draw() {
 
-	// 1. 오프스크린 렌더링
+	// 1. Off-Screen Rendering
 	dxCommon_->RenderTexturePreDraw();
 	srvManager_->PreDraw();
 	sceneManager_->Draw();
 	dxCommon_->RenderTexturePostDraw();
 	//dxCommon_->PreDraw();
-	// 2. 스왑체인으로 복사
+	// 2. Copy to Swap Chain
 	//dxCommon_->CopyRenderTextureToSwapChain();
-	if (dxCommon_->IsVignetteEnabled()) {
-		dxCommon_->DrawVignetteToSwapChain();
-	} else if (dxCommon_->IsGrayscaleEnabled()) {
-		dxCommon_->DrawGrayscaleToSwapChain();
-	} else if (dxCommon_->IsRadialBlurEnabled()) {
-		dxCommon_->DrawRadialBlurToSwapChain();
-	} else {
+	PostEffectMode currentMode = PostProcessManager::GetInstance()->GetPostEffectMode();
+
+	if (currentMode == PostEffectMode::None) {
+		// When the effect is disabled, draw the original screen as-is
 		dxCommon_->CopyRenderTextureToSwapChain();
+	} else {
+		// When the effect is enabled, delegate integrated rendering to the newly created manager
+		PostProcessManager::GetInstance()->Draw(
+			dxCommon_->GetCommandList().Get(),
+			dxCommon_->GetOffscreenSRVIndex() 
+		);
 	}
 #ifdef _DEBUG
 	imGuiManager_->Draw();
 #endif // _DEBUG
 
-	// 3. 최종 렌더링 완료
+	// 3. Final Rendering Complete
 	dxCommon_->PostDraw();
 
 

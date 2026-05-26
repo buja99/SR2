@@ -1,4 +1,5 @@
 #include "Framework.h"
+#include "PostProcessManager.h"
 #include <dxgidebug.h>
 
 void Framework::CheckHeap() {
@@ -35,6 +36,7 @@ void Framework::Initialize() {
 
 	dxCommon_->InitializeOffscreenRenderTarget();
 
+	PostProcessManager::GetInstance()->Initialize(dxCommon_->GetDevice().Get());
 #ifdef _DEBUG
 
 	imGuiManager_ = std::make_unique<ImGuiManager>();
@@ -88,6 +90,7 @@ void Framework::Finalize() {
 
 	TextureManager::GetInstance()->Finalize();
 	ModelManager::GetInstance()->Finalize();
+	PostProcessManager::GetInstance()->Cleanup();
 	if (object3dCommon_) {
 		object3dCommon_->Finalize();
 		object3dCommon_ = nullptr;

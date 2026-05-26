@@ -1,6 +1,7 @@
 #include "TitleScene.h"
 #include "SceneManager.h"
 #include "ImGuiManager.h"
+#include "PostProcessManager.h"
 TitleScene::~TitleScene() {
 	Finalize();
 }
@@ -75,7 +76,7 @@ void TitleScene::Initialize() {
 	TextureManager::GetInstance()->LoadTexture("resources/gradationLine.png");
 	TextureManager::GetInstance()->LoadTexture("resources/circle.png");
 
-	effectLibrary_ = std::make_unique<ParticleEffectLibrary>();
+	/*effectLibrary_ = std::make_unique<ParticleEffectLibrary>();
 	effectLibrary_->Initialize(DirectXCommon::GetInstance(), SrvManager::GetInstance(), camera_.get());
 
 	effectLibrary_->EmitPrimitive({ 0.0f, 10.0f, 0.0f }, randomEngine_);
@@ -85,10 +86,10 @@ void TitleScene::Initialize() {
 	effectLibrary_->SetUseRingAutoEmit(true);
 
 	effectLibrary_->EmitCylinder({ 8.0f, 2.0f, 0.0f }, randomEngine_);
-	effectLibrary_->SetUseCylinderAutoEmit(true);
+	effectLibrary_->SetUseCylinderAutoEmit(true);*/
 
 
-	DirectXCommon::GetInstance()->SetGrayscaleStrength(0.0f);
+	PostProcessManager::GetInstance()->SetGrayscaleStrength(0.0f);
 }
 
 void TitleScene::Update() {
@@ -100,7 +101,7 @@ void TitleScene::Update() {
 	worldTransform_->UpdateMatrix();
 	testWorldTransform_->UpdateMatrix();
 	camera_->Update();
-	effectLibrary_->Update();
+	//effectLibrary_->Update();
 
 #ifdef _DEBUG
 	ImGui::Begin("Model Transform");
@@ -216,68 +217,63 @@ void TitleScene::Update() {
 
 	ImGui::Begin("PostEffect");
 
-	// === Grayscale ===
-	if (ImGui::Checkbox("Use Grayscale", &useGrayscale_)) {
-		if (useGrayscale_) {
-			useVignette_ = false;
-			useRadialBlur_ = false;
-			DirectXCommon::GetInstance()->SetVignetteEnabled(false);
-			DirectXCommon::GetInstance()->SetRadialBlurEnabled(false);
+	// Current Integrated Mode Stored in the Manager
+	PostEffectMode currentMode = PostProcessManager::GetInstance()->GetPostEffectMode();
+
+	//  Switch Mode When Radio Button Is Selected
+	if (ImGui::RadioButton("None", currentMode == PostEffectMode::None)) {
+		PostProcessManager::GetInstance()->SetPostEffectMode(PostEffectMode::None);
+	}
+	ImGui::SameLine();
+	if (ImGui::RadioButton("Grayscale", currentMode == PostEffectMode::Grayscale)) {
+		PostProcessManager::GetInstance()->SetPostEffectMode(PostEffectMode::Grayscale);
+	}
+	ImGui::SameLine();
+	if (ImGui::RadioButton("Vignette", currentMode == PostEffectMode::Vignette)) {
+		PostProcessManager::GetInstance()->SetPostEffectMode(PostEffectMode::Vignette);
+	}
+	ImGui::SameLine();
+	if (ImGui::RadioButton("Radial Blur", currentMode == PostEffectMode::RadialBlur)) {
+		PostProcessManager::GetInstance()->SetPostEffectMode(PostEffectMode::RadialBlur);
+	}
+
+	ImGui::Separator(); 
+
+	// 1) Adjust Grayscale Intensity
+	if (PostProcessManager::GetInstance()->IsGrayscaleEnabled()) {
+		float grayscaleStrength = PostProcessManager::GetInstance()->GetGrayscaleStrength();
+		if (ImGui::SliderFloat("Grayscale Strength", &grayscaleStrength, 0.0f, 1.0f)) {
+			PostProcessManager::GetInstance()->SetGrayscaleStrength(grayscaleStrength);
 		}
-		DirectXCommon::GetInstance()->SetGrayscaleEnabled(useGrayscale_);
 	}
 
-	float grayscaleStrength = DirectXCommon::GetInstance()->GetGrayscaleStrength();
-	if (ImGui::SliderFloat("Grayscale Strength", &grayscaleStrength, 0.0f, 1.0f)) {
-		DirectXCommon::GetInstance()->SetGrayscaleStrength(grayscaleStrength);
-	}
-
-	// === Vignette ===
-	if (ImGui::Checkbox("Use Vignette", &useVignette_)) {
-		if (useVignette_) {
-			useGrayscale_ = false;
-			useRadialBlur_ = false;
-			DirectXCommon::GetInstance()->SetGrayscaleEnabled(false);
-			DirectXCommon::GetInstance()->SetRadialBlurEnabled(false);
+	// 2) Adjust Vignette Intensity
+	if (PostProcessManager::GetInstance()->IsVignetteEnabled()) {
+		float vignetteStrength = PostProcessManager::GetInstance()->GetVignetteStrength();
+		if (ImGui::SliderFloat("Vignette Strength", &vignetteStrength, 0.0f, 1.0f)) {
+			PostProcessManager::GetInstance()->SetVignetteStrength(vignetteStrength);
 		}
-		DirectXCommon::GetInstance()->SetVignetteEnabled(useVignette_);
 	}
 
-	float vignetteStrength = DirectXCommon::GetInstance()->GetVignetteStrength();
-	if (ImGui::SliderFloat("Vignette Strength", &vignetteStrength, 0.0f, 1.0f)) {
-		DirectXCommon::GetInstance()->SetVignetteStrength(vignetteStrength);
-	}
-
-	// === Radial Blur ===
-	if (ImGui::Checkbox("Use RadialBlur", &useRadialBlur_)) {
-		if (useRadialBlur_) {
-			useGrayscale_ = false;
-			useVignette_ = false;
-			DirectXCommon::GetInstance()->SetGrayscaleEnabled(false);
-			DirectXCommon::GetInstance()->SetVignetteEnabled(false);
+	// 3) Adjust Radial Blur Details
+	if (PostProcessManager::GetInstance()->IsRadialBlurEnabled()) {
+		int sampleCount = PostProcessManager::GetInstance()->GetRadialBlurNumSamples();
+		if (ImGui::SliderInt("Samples", &sampleCount, 2, 64)) {
+			PostProcessManager::GetInstance()->SetRadialBlurNumSamples(sampleCount);
 		}
-		DirectXCommon::GetInstance()->SetRadialBlurEnabled(useRadialBlur_);
-	}
 
-	// 샘플 수 조절
-	int sampleCount = DirectXCommon::GetInstance()->GetRadialBlurNumSamples();
-	if (ImGui::SliderInt("Samples", &sampleCount, 2, 64)) {
-		DirectXCommon::GetInstance()->SetRadialBlurNumSamples(sampleCount);
-	}
+		float strength = PostProcessManager::GetInstance()->GetRadialBlurStrength();
+		if (ImGui::SliderFloat("Blur Strength", &strength, 0.0f, 1.0f)) {
+			PostProcessManager::GetInstance()->SetRadialBlurStrength(strength);
+		}
 
-	// 블러 강도
-	float strength = DirectXCommon::GetInstance()->GetRadialBlurStrength();
-	if (ImGui::SliderFloat("Strength", &strength, 0.0f, 1.0f)) {
-		DirectXCommon::GetInstance()->SetRadialBlurStrength(strength);
-	}
-
-	// 중심 위치
-	float center[2] = {
-	DirectXCommon::GetInstance()->GetRadialBlurCenterX(),
-	DirectXCommon::GetInstance()->GetRadialBlurCenterY()
-	};
-	if (ImGui::SliderFloat2("Center", center, 0.0f, 1.0f)) {
-		DirectXCommon::GetInstance()->SetRadialBlurCenter(center[0], center[1]);
+		float center[2] = {
+			PostProcessManager::GetInstance()->GetRadialBlurCenterX(),
+			PostProcessManager::GetInstance()->GetRadialBlurCenterY()
+		};
+		if (ImGui::SliderFloat2("Center", center, 0.0f, 1.0f)) {
+			PostProcessManager::GetInstance()->SetRadialBlurCenter(center[0], center[1]);
+		}
 	}
 
 	ImGui::End();
@@ -303,10 +299,10 @@ void TitleScene::Update() {
 	ImGui::End();
 #endif
 
-	if (input_->TriggerKey(DIK_V)) {
+	/*if (input_->TriggerKey(DIK_V)) {
 		useVignette_ = !useVignette_;
 		DirectXCommon::GetInstance()->SetVignetteEnabled(useVignette_);
-	}
+	}*/
 
 	if (input_->TriggerKey(DIK_SPACE)) {
 		sceneManager_->ChangeScene("GAME");
@@ -315,9 +311,9 @@ void TitleScene::Update() {
 	}
 
 
-	effectLibrary_->GetPrimitiveManager()->Update();
-	effectLibrary_->GetRingManager()->Update();
-	effectLibrary_->GetCylinderManager()->Update();
+	//effectLibrary_->GetPrimitiveManager()->Update();
+	//effectLibrary_->GetRingManager()->Update();
+	//effectLibrary_->GetCylinderManager()->Update();
 }
 
 void TitleScene::Draw() {

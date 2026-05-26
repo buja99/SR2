@@ -5,6 +5,7 @@
 #endif // _DEBUG
 #include "MyMath.h"
 #include "LevelObjectBuilder.h"
+#include "PostProcessManager.h"
 GameScene::~GameScene() {
 }
 
@@ -114,7 +115,7 @@ block_->SetUseEnvironmentMap(true);
 block_->SetEnvironmentMap("resources/rostock_laage_airport_4k.dds");
 camera_->SetTranslate({ 0.0f, 5.0f, -14.0f });
 
-DirectXCommon::GetInstance()->SetGrayscaleStrength(0.0f);
+PostProcessManager::GetInstance()->SetGrayscaleStrength(0.0f);
 
 
 }
@@ -129,10 +130,7 @@ void GameScene::Update() {
 
 	ImGui::Begin("Stencil Mask");
 
-	ImGui::SliderFloat("Center X", &centerX, -1.0f, 1.0f);
-	ImGui::SliderFloat("Center Y", &centerY, -1.0f, 1.0f);
-	ImGui::SliderFloat("Half Width", &halfW, 0.0f, 10.0f);
-	ImGui::SliderFloat("Half Height", &halfH, 0.0f, 10.0f);
+	
 
 	ImGui::End();
 
@@ -208,10 +206,7 @@ void GameScene::Draw() {
 	
 	//back_->Draw();
 	
-	left = centerX - halfW;
-	right = centerX + halfW;
-	top = centerY + halfH;
-	bottom = centerY - halfH;
+	
 
 	//// 1. 마스크 사각형 지정
 	//Object3dCommon::GetInstance()->SetStencilQuadArea(-1.0f, 1.0f, 1.0f, -1.0f, 0.0f);

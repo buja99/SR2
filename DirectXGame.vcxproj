@@ -163,6 +163,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\graphics\texture\TextureUploader.cpp" />
     <ClCompile Include="engine\3D\Skeleton.cpp" />
     <ClCompile Include="engine\3D\SkinCluster.cpp" />
+    <ClCompile Include="application\Base\PostProcessManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\3D\Animator.h" />
@@ -220,6 +221,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\graphics\texture\TextureUploader.h" />
     <ClInclude Include="engine\3D\Skeleton.h" />
     <ClInclude Include="engine\3D\SkinCluster.h" />
+    <ClInclude Include="application\Base\PostProcessManager.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="externals\DirectXTex\DirectXTex_Desktop_2022_Win10.vcxproj">
