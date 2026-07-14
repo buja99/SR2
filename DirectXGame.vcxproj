@@ -64,7 +64,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <AdditionalIncludeDirectories>$(ProjectDir)application\Base;$(ProjectDir)application\Input;$(ProjectDir)engine\2D;$(ProjectDir)engine\3D;$(ProjectDir)engine\Math;$(ProjectDir)imgui;$(ProjectDir)externals\DirectXTex;$(ProjectDir)engine\srvManager;$(ProjectDir)engine\camera;$(ProjectDir)engine\particle;$(ProjectDir)resources\shaders;$(ProjectDir);$(ProjectDir)externals\assimp\include;$(ProjectDir)externals\nlohmann_json;$(ProjectDir)application\core;$(ProjectDir)application\debug;$(ProjectDir)application\scenes;$(ProjectDir)application\sceneSystem;$(ProjectDir)engine\audio;$(ProjectDir)engine\gameplay;$(ProjectDir)engine\spriteCamera;$(ProjectDir)engine\utils;$(ProjectDir)engine\worldTransform;$(ProjectDir)engine\utils\json;$(ProjectDir)externals\imgui;$(ProjectDir)engine\render\skybox;$(ProjectDir)engine\graphics\texture;$(ProjectDir)engine\3D\lights;$(ProjectDir)engine\render\postEffect</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)application\Base;$(ProjectDir)application\Input;$(ProjectDir)engine\2D;$(ProjectDir)engine\3D;$(ProjectDir)engine\Math;$(ProjectDir)imgui;$(ProjectDir)externals\DirectXTex;$(ProjectDir)engine\srvManager;$(ProjectDir)engine\camera;$(ProjectDir)engine\particle;$(ProjectDir)resources\shaders;$(ProjectDir);$(ProjectDir)externals\assimp\include;$(ProjectDir)externals\nlohmann_json;$(ProjectDir)application\core;$(ProjectDir)application\debug;$(ProjectDir)application\scenes;$(ProjectDir)application\sceneSystem;$(ProjectDir)engine\audio;$(ProjectDir)engine\gameplay;$(ProjectDir)engine\spriteCamera;$(ProjectDir)engine\utils;$(ProjectDir)engine\worldTransform;$(ProjectDir)engine\utils\json;$(ProjectDir)externals\imgui;$(ProjectDir)engine\render\skybox;$(ProjectDir)engine\graphics\texture;$(ProjectDir)engine\3D\lights;$(ProjectDir)engine\render\postEffect;$(ProjectDir)engine\gameplay\enemy</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -95,7 +95,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalIncludeDirectories>$(ProjectDir)application\Base;$(ProjectDir)application\Input;$(ProjectDir)engine\2D;$(ProjectDir)engine\3D;$(ProjectDir)engine\Math;$(ProjectDir)imgui;$(ProjectDir)externals\DirectXTex;$(ProjectDir)engine\srvManager;$(ProjectDir)engine\camera;$(ProjectDir)engine\particle;$(ProjectDir)resources\shaders;$(ProjectDir);$(ProjectDir)externals\assimp\include;$(ProjectDir)externals\nlohmann_json;$(ProjectDir)application\core;$(ProjectDir)application\debug;$(ProjectDir)application\scenes;$(ProjectDir)application\sceneSystem;$(ProjectDir)engine\audio;$(ProjectDir)engine\gameplay;$(ProjectDir)engine\spriteCamera;$(ProjectDir)engine\utils;$(ProjectDir)engine\worldTransform;$(ProjectDir)engine\utils\json;$(ProjectDir)externals\imgui;$(ProjectDir)engine\render\skybox;$(ProjectDir)engine\graphics\texture;$(ProjectDir)engine\3D\lights;$(ProjectDir)engine\render\postEffect</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)application\Base;$(ProjectDir)application\Input;$(ProjectDir)engine\2D;$(ProjectDir)engine\3D;$(ProjectDir)engine\Math;$(ProjectDir)imgui;$(ProjectDir)externals\DirectXTex;$(ProjectDir)engine\srvManager;$(ProjectDir)engine\camera;$(ProjectDir)engine\particle;$(ProjectDir)resources\shaders;$(ProjectDir);$(ProjectDir)externals\assimp\include;$(ProjectDir)externals\nlohmann_json;$(ProjectDir)application\core;$(ProjectDir)application\debug;$(ProjectDir)application\scenes;$(ProjectDir)application\sceneSystem;$(ProjectDir)engine\audio;$(ProjectDir)engine\gameplay;$(ProjectDir)engine\spriteCamera;$(ProjectDir)engine\utils;$(ProjectDir)engine\worldTransform;$(ProjectDir)engine\utils\json;$(ProjectDir)externals\imgui;$(ProjectDir)engine\render\skybox;$(ProjectDir)engine\graphics\texture;$(ProjectDir)engine\3D\lights;$(ProjectDir)engine\render\postEffect;$(ProjectDir)engine\gameplay\enemy</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -117,6 +117,10 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="engine\gameplay\enemy\EnemyStateAttack.cpp" />
+    <ClCompile Include="engine\gameplay\enemy\EnemyStateDead.cpp" />
+    <ClCompile Include="engine\gameplay\enemy\EnemyStateChase.cpp" />
+    <ClCompile Include="engine\gameplay\enemy\EnemyStateIdle.cpp" />
     <ClCompile Include="engine\3D\lights\AmbientLight.cpp" />
     <ClCompile Include="engine\3D\AnimatedModel.cpp" />
     <ClCompile Include="engine\3D\lights\AreaLight.cpp" />
@@ -130,8 +134,8 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\Base\WinApp.cpp" />
     <ClCompile Include="application\Input\Input.cpp" />
     <ClCompile Include="application\sceneSystem\BaseScene.cpp" />
-    <ClCompile Include="engine\gameplay\BaseEnemy.cpp" />
-    <ClCompile Include="engine\gameplay\Enemy.cpp" />
+    <ClCompile Include="engine\gameplay\enemy\BaseEnemy.cpp" />
+    <ClCompile Include="engine\gameplay\enemy\Enemy.cpp" />
     <ClCompile Include="engine\camera\Camera.cpp" />
     <ClCompile Include="engine\2D\Sprite.cpp" />
     <ClCompile Include="engine\2D\SpriteCommon.cpp" />
@@ -177,6 +181,10 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\render\postEffect\VignetteEffect.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="engine\gameplay\enemy\EnemyStateAttack.h" />
+    <ClInclude Include="engine\gameplay\enemy\EnemyStateDead.h" />
+    <ClInclude Include="engine\gameplay\enemy\EnemyStateChase.h" />
+    <ClInclude Include="engine\gameplay\enemy\EnemyStateIdle.h" />
     <ClInclude Include="engine\3D\lights\AmbientLight.h" />
     <ClInclude Include="engine\3D\AnimatedModel.h" />
     <ClInclude Include="engine\3D\lights\AreaLight.h" />
@@ -192,8 +200,8 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\Input\Input.h" />
     <ClInclude Include="application\sceneSystem\BaseScene.h" />
     <ClInclude Include="engine\3D\Bone.h" />
-    <ClInclude Include="engine\gameplay\BaseEnemy.h" />
-    <ClInclude Include="engine\gameplay\Enemy.h" />
+    <ClInclude Include="engine\gameplay\enemy\BaseEnemy.h" />
+    <ClInclude Include="engine\gameplay\enemy\Enemy.h" />
     <ClInclude Include="engine\camera\Camera.h" />
     <ClInclude Include="engine\2D\Sprite.h" />
     <ClInclude Include="engine\2D\SpriteCommon.h" />
@@ -202,6 +210,8 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\3D\ModelManager.h" />
     <ClInclude Include="engine\3D\Object3d.h" />
     <ClInclude Include="engine\3D\Object3dCommon.h" />
+    <ClInclude Include="engine\gameplay\enemy\IEnemyState.h" />
+    <ClInclude Include="engine\gameplay\IEnemyState.h" />
     <ClInclude Include="engine\Math\Lighting.h" />
     <ClInclude Include="engine\Math\Material.h" />
     <ClInclude Include="engine\Math\Matrix3x3.h" />

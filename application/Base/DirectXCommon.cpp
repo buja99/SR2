@@ -480,6 +480,21 @@ void DirectXCommon::PostDraw() {
 
 }
 
+void DirectXCommon::SetBackBufferAsRenderTarget() {
+	// 1. 현재 활성화된 스왑체인의 백버퍼 인덱스(0 또는 1)를 가져옵니다.
+	UINT backBufferIndex = swapChain->GetCurrentBackBufferIndex();
+
+	// 2. RTV 힙의 시작 주소에서 현재 백버퍼 인덱스만큼 오프셋(거리)을 이동하여 CPU 핸들을 구합니다.
+	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+	rtvHandle.ptr += backBufferIndex * descriptorSizeRTV;
+
+	// 3. DSV(깊이 스텐실) 힙의 시작 주소에서 CPU 핸들을 가져옵니다.
+	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+
+	// 4. 파이프라인의 렌더 타겟을 최종 백버퍼 화면으로 교체합니다.
+	commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
+}
+
 
 IDxcBlob* DirectXCommon::CompileShader(const std::wstring& filePath, const wchar_t* profile, IDxcUtils* dxcUtils, IDxcCompiler3* dxcCompiler, IDxcIncludeHandler* includeHandler) {
 	//hlsl
