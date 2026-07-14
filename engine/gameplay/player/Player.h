@@ -14,6 +14,9 @@
 #include "BaseEnemy.h"
 #include "Enemy.h"
 #include "ParticleEffectLibrary.h"
+#include "IPlayerState.h"
+#include <memory>
+
 class Player {
 
 
@@ -26,6 +29,8 @@ public:
 	void Updata();
 
 	void Draw();
+
+	void ChangeState(std::unique_ptr<IPlayerState> newState);
 
 	void HitEffectDraw();
 
@@ -42,6 +47,7 @@ public:
 	void SetEffectLibrary(ParticleEffectLibrary* effectLibrary);
 	void SetRandomEngine(std::mt19937* engine);
 	Vector3 GetWeaponWorldPosition();
+	WorldTransform* GetBodyTransform() { return playerTransforms_[BODY].get(); }
 private:
 
 	Vector3 position;
@@ -70,5 +76,7 @@ private:
 	std::vector<BaseEnemy*> enemies_;
 	ParticleEffectLibrary* effectLibrary_ = nullptr;
 	std::mt19937* randomEngine_ = nullptr;
+
+	std::unique_ptr<IPlayerState> currentState_;
 };
 

@@ -5,6 +5,8 @@
 #include "ModelManager.h"
 #include "DirectXCommon.h"
 #include "Object3d.h"
+#include "PlayerStateIdle.h"
+#include "PlayerStateMove.h"
 
 Player::~Player() {
 }
@@ -59,30 +61,25 @@ void Player::Initialize() {
 
 	originalWeaponAngleX_ = playerTransforms_[WEAPON]->rotate_.x;
 
+	ChangeState(std::make_unique<PlayerStateIdle>());
 }
 
 void Player::Updata() {
 
-	Input* input = Input::GetInstance();
-	Vector3 move = { 0.0f, 0.0f, 0.0f };
-	if (input->PushKey(DIK_A)) {
-		move.x -= 1.0f;
-	}
-	if (input->PushKey(DIK_D)) {
-		move.x += 1.0f;
-	}
-	if (input->PushKey(DIK_W)) {
-		move.z += 1.0f;
-	}
-	if (input->PushKey(DIK_S)) {
-		move.z -= 1.0f;
-	}
-	if (move.x != 0.0f || move.z != 0.0f) {
-		move = MyMath::normalize(move);  // ← Vector3에 Normalize 함수가 있어야 함
-		move = MyMath::Multiply(move,speed);
+
+	if (currentState_) {
+		currentState_->Update(this);
 	}
 
-	playerTransforms_[BODY]->translate_ = MyMath::Add(playerTransforms_[BODY]->translate_, move);
+	
+	for (int i = 0; i < kPlayerPartCount; ++i) {
+		if (playerTransforms_[i]) {
+			playerTransforms_[i]->UpdateMatrix();
+			playerTransforms_[i]->TransferMatrix();
+		}
+	}
+
+	
 
 	// 이동 후 범위 제한
 	Vector3& pos = playerTransforms_[BODY]->translate_;
@@ -165,6 +162,16 @@ void Player::Draw() {
 		part->Draw();
 	}
 	
+}
+
+void Player::ChangeState(std::unique_ptr<IPlayerState> newState) {
+	if (currentState_) {
+		currentState_->Exit(this);
+	}
+	currentState_ = std::move(newState);
+	if (currentState_) {
+		currentState_->Enter(this);
+	}
 }
 
 void Player::HitEffectDraw() {
