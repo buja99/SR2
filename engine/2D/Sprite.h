@@ -48,7 +48,6 @@ private:
         Matrix4x4 World;
     };
 
-    // 상태 값
     Vector2 position_ = {};
     Vector2 size_ = { 100, 100 };
     Vector2 anchor_ = { 0.0f, 0.0f };
@@ -60,7 +59,6 @@ private:
     bool isFlipX_ = false;
     bool isFlipY_ = false;
 
-    // 렌더링 리소스
     ComPtr<ID3D12Resource> vertexBuffer_;
     ComPtr<ID3D12Resource> indexBuffer_;
     ComPtr<ID3D12Resource> materialBuffer_;

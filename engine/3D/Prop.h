@@ -6,10 +6,10 @@
 
 class Prop {
 public:
-    // 생성 및 초기화 (어떤 모델을 쓸지 이름만 넘겨줍니다)
+    
     void Initialize(const std::string& modelName);
 
-    // 갱신 및 그리기
+   
     void Update();
     void Draw();
 
@@ -47,7 +47,7 @@ public:
     void SetUseAreaLight(bool use) { if (model_) model_->SetUseAreaLight(use); }
 
 private:
-    // 상자 안에 부품 2개를 꽁꽁 숨겨둡니다.
+    
     std::unique_ptr<Object3d> model_;
     std::unique_ptr<WorldTransform> worldTransform_;
 };

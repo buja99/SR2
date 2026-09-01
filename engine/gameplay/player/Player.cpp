@@ -31,7 +31,7 @@ void Player::Initialize() {
 
 	for (int i = 0; i < kPlayerPartCount; ++i) {
 		if (i == BODY) continue;
-		playerTransforms_[i]->parent_ = playerTransforms_[BODY].get(); // 계층 설정
+		playerTransforms_[i]->parent_ = playerTransforms_[BODY].get(); 
 	}
 
 	playerParts_[ARM_R]->SetModel("arm.obj");
@@ -81,7 +81,7 @@ void Player::Updata() {
 
 	
 
-	// 이동 후 범위 제한
+
 	Vector3& pos = playerTransforms_[BODY]->translate_;
 	float fieldLimitX = 150.0f;
 	float fieldLimitZ = 150.0f;
@@ -93,14 +93,13 @@ void Player::Updata() {
 	playerTransforms_[BODY]->UpdateMatrix();
 	playerTransforms_[BODY]->TransferMatrix();
 
-	// 2. 자식들 업데이트
 	for (int i = 0; i < kPlayerPartCount; ++i) {
 		if (i == BODY) continue;
 		playerTransforms_[i]->UpdateMatrix();
 		playerTransforms_[i]->TransferMatrix();
 	}
 
-	// 공격
+
 	if (!isAttacking_ && Input::GetInstance()->TriggerKey(DIK_SPACE)) {
 		isAttacking_ = true;
 		attackTimer_ = 0;
@@ -108,10 +107,10 @@ void Player::Updata() {
 	}
 
 	if (isAttacking_) {
-		const float maxSwing = 3.0f; // 회전량 (radian 기준, 약 90도면 1.57)
+		const float maxSwing = 3.0f; 
 		float t = static_cast<float>(attackTimer_) / static_cast<float>(attackDuration_);
 
-		// 공격 전반부는 증가, 후반부는 감소
+
 		float swingAngle = 0.0f;
 		if (t <= 0.5f) {
 			swingAngle = maxSwing * (t * 2.0f); // 0 → max
@@ -130,9 +129,9 @@ void Player::Updata() {
 
 		if (attackTimer_ >= attackDuration_) {
 			isAttacking_ = false;
-			hasHit_ = false; // 공격이 끝나면 다시 초기화
+			hasHit_ = false; 
 			attackTimer_ = 0;
-			playerTransforms_[WEAPON]->rotate_.x = originalWeaponAngleX_; // 원위치
+			playerTransforms_[WEAPON]->rotate_.x = originalWeaponAngleX_; 
 		}
 	}
 
@@ -190,27 +189,25 @@ void Player::SetCamera(Camera* camera) {
 }
 
 bool Player::HitCheck() {
-	// 1. 무기 OBB 생성
-	// 무기 모델 크기(원본 bounding box 크기)는 직접 지정해줘야 합니다.
-	// 예시: playerWeapon.obj 의 대략적인 크기를 (1, 4.5, 1) 로 가정
+	
 	Vector3 weaponModelSize = { 1.0f, 4.5f, 1.0f };
 
 	OBB weaponOBB = MyMath::MakeOBB(*playerTransforms_[WEAPON], weaponModelSize);
 
 	bool didHit = false;
 
-	// 2. 적들과 OBB 충돌 검사
+	
 	for (auto& enemy : enemies_) {
-		// 적 모델 크기(원본 bounding box 크기). enemyTest.obj 가 (12,3,3)으로 스케일된 상태.
+		
 		Vector3 enemyModelSize = { 12.0f, 3.0f, 3.0f };
 
 		OBB enemyOBB = MyMath::MakeOBB(enemy->GetWorldTransform(), enemyModelSize);
 
-		// 3. OBB 충돌 판정
+	
 		if (MyMath::IsOBBCollision(weaponOBB, enemyOBB)) {
 			enemy->OnHit(10.0f);
 
-			// 충돌 지점은 간단히 enemy 중심을 사용 (정밀 계산하려면 SAT 축별 penetration depth 필요)
+			
 			Vector3 hitPos = enemyOBB.center;
 
 			effectLibrary_->EmitPrimitive(hitPos, *randomEngine_);

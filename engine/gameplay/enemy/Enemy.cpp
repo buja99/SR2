@@ -43,7 +43,7 @@ void Enemy::Draw() {
 }
 
 int Enemy::GetType() const {
-    return 0; // 예: 기본 enemy type
+    return 0; 
 }
 
 void Enemy::OnHit(float damage) {
@@ -58,7 +58,7 @@ void Enemy::OnHit(float damage) {
     Vector3 pos = enemyWorldTransform_->translate_;
     //pos.y += 2.0f;
    
-     // 또는: effectLibrary_->EmitHitEffect(pos, ...);
+     // effectLibrary_->EmitHitEffect(pos, ...);
      isHit_ = true;
 }
 void Enemy::SetCamera(Camera* camera) {
@@ -71,11 +71,11 @@ WorldTransform& Enemy::GetWorldTransform() {
 
 void Enemy::ChangeState(std::unique_ptr<IEnemyState> newState) {
     if (currentState_) {
-        currentState_->Exit(this); // 기존 상태 종료
+        currentState_->Exit(this); // Exit the current state
     }
-    currentState_ = std::move(newState); // 새 상태로 교체
+    currentState_ = std::move(newState); // Switch to the new state
     if (currentState_) {
-        currentState_->Enter(this); // 새 상태 진입
+        currentState_->Enter(this); // Enter the new state
     }
 }
 

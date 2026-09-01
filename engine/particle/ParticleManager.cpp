@@ -10,7 +10,7 @@ using namespace StringUtility;
 
 void ParticleManager::Initialize(DirectXCommon* directXCommon, SrvManager* srvManager) {
 #ifdef _DEBUG
-	// 유효성 검사(Validation)
+	
 	assert(directXCommon != nullptr);
 	assert(srvManager != nullptr);
 #endif // _DEBUG
@@ -41,31 +41,29 @@ void ParticleManager::Update() {
 	constexpr float deltaTime = 1.0f / 60.0f;
 
 	for (auto& [name, group] : particleGroups) {
-		// ✅ emitter 자동 발사
+		
 		group.emitter.frequencyTime += deltaTime;
 		if (group.emitter.frequencyTime >= group.emitter.frequency) {
 			group.emitter.frequencyTime = 0.0f;
 			Emit(name, group.emitter, randomEngine_);
 		}
 
-		// ✅ 수명 갱신 및 파티클 제거
 		group.particles.remove_if([deltaTime](Particle& p) {
 			p.currentTime += deltaTime;
 			return p.currentTime >= p.lifeTime;
 			});
 
-		// ✅ 파티클 업데이트 및 GPU 전송
+
 		uint32_t  i = 0;
 		for (auto& p : group.particles) {
-			// 위치 이동
-			//p.velocity = MyMath::Add(p.velocity, p.acceleration); //가속도
+			
 			p.transform.translate = MyMath::Add(p.transform.translate, p.velocity);
 
 			if (group.mappedInstanceData && i < initialInstanceCount_) {
-				// 스케일 행렬
+				
 				Matrix4x4 scaleMatrix = MyMath::MakeScaleMatrix(p.transform.scale);
 
-				// 회전 or 빌보드 행렬
+				
 				Matrix4x4 scaleRotate;
 				if (useBillboard_) {
 					scaleRotate = MyMath::Multiply(scaleMatrix, billboardMatrix);
@@ -77,7 +75,7 @@ void ParticleManager::Update() {
 					scaleRotate = MyMath::Multiply(scaleMatrix, rotationMatrix);
 				}
 
-				// 최종 World 행렬
+				
 				Matrix4x4 worldMatrix = scaleRotate;
 				worldMatrix.m[3][0] = p.transform.translate.x;
 				worldMatrix.m[3][1] = p.transform.translate.y;
@@ -86,16 +84,12 @@ void ParticleManager::Update() {
 				float t = p.currentTime / p.lifeTime;
 				float alpha = 1.0f - t * t;
 
-				/*float scaleAlpha = alpha;
-				p.transform.scale.y *= scaleAlpha;*/
-
-				// WVP 계산 및 전송
+				
 				Matrix4x4 wvp = MyMath::Multiply(worldMatrix, viewProjectionMatrix);
 				group.mappedInstanceData[i].WVP = wvp;
 				group.mappedInstanceData[i].World = worldMatrix;
 
-				// 색상 및 알파
-				//float alpha = 1.0f - (p.currentTime / p.lifeTime);
+				
 				float flicker = 0.9f + 0.2f * std::sin(p.currentTime * 20.0f);
 				group.mappedInstanceData[i].color = p.color;
 				group.mappedInstanceData[i].color.w *= alpha * flicker;
@@ -120,9 +114,9 @@ void ParticleManager::Draw() {
 
 		if (group.instanceCount > 0) {
 
-			// 🔹 GPU에 올바른 데이터가 전달되었는지 확인
+			
 			if (group.instanceCount <= 0 || !group.mappedInstanceData) {
-				continue; // 그릴 필요 없음
+				continue;
 			}
 			D3D12_GPU_DESCRIPTOR_HANDLE instanceHandle = srvManager_->GetGPUDescriptorHandle(group.instanceSRVIndex);
 			commandList->SetGraphicsRootDescriptorTable(0, instanceHandle);
@@ -135,23 +129,23 @@ void ParticleManager::Draw() {
 }
 
 void ParticleManager::calculationBillboardMatrix() {
-	// 1. Z+ → Z- 보정 (뒤 → 앞 전환용 Y축 180도 회전 행렬)
+	
 	Matrix4x4 backToFrontMatrix = MyMath::MakeRotateYMatrix(std::numbers::pi_v<float>);
 
-	// 2. 카메라의 회전값만 가져오기
+	
 	Vector3 cameraRotation = camera_->GetRotate();
 
-	// 3. 회전 행렬 생성 (Y→X→Z 순)
+	
 	Matrix4x4 rotateX = MyMath::MakeRotateXMatrix(cameraRotation.x);
 	Matrix4x4 rotateY = MyMath::MakeRotateYMatrix(cameraRotation.y);
 	Matrix4x4 rotateZ = MyMath::MakeRotateZMatrix(cameraRotation.z);
 
 	Matrix4x4 cameraRotationOnly = MyMath::Multiply(rotateY, MyMath::Multiply(rotateX, rotateZ));
 
-	// 4. billboard = backToFront * cameraRotationOnly
+	
 	billboardMatrix = MyMath::Multiply(backToFrontMatrix, cameraRotationOnly);
 
-	// 5. 위치 성분 제거
+	
 	billboardMatrix.m[3][0] = 0.0f;
 	billboardMatrix.m[3][1] = 0.0f;
 	billboardMatrix.m[3][2] = 0.0f;
@@ -200,42 +194,7 @@ Particle ParticleManager::MakeNewParticle(const Vector3& position, const Vector3
 	return p;
 }
 
-//Particle ParticleManager::MakeNewParticle(std::mt19937& randomEngine, const Vector3& translate)
-//{
-//	std::uniform_real_distribution<float> distX(-10.0f, 10.0f);   // 좌우로 퍼짐
-//	std::uniform_real_distribution<float> distY(0.0f, 2.0f);    // 위쪽에서 떨어짐
-//	std::uniform_real_distribution<float> distZ(-3.0f, 3.0f);   // 앞뒤로 퍼짐
-//	std::uniform_real_distribution<float> distFallSpeed(0.01f, 0.05f); // 느린 낙하
-//	std::uniform_real_distribution<float> distSideDrift(-0.01f, 0.01f);
-//	std::uniform_real_distribution<float> distScale(0.1f, 0.3f);
-//	std::uniform_real_distribution<float> distLifetime(3.0f, 6.0f);
-//	std::uniform_real_distribution<float> distAlpha(0.4f, 0.8f);
-//
-//	Particle p{};
-//	// 위에서 흩뿌리듯 떨어지는 위치
-//	p.transform.translate = {
-//		translate.x + distX(randomEngine),
-//		translate.y + distY(randomEngine) + 5.0f,  // 기준점보다 위로
-//		translate.z + distZ(randomEngine)
-//	};
-//	// 느리게 아래로 떨어지며 약간 흩어짐
-//	p.velocity = {
-//		distSideDrift(randomEngine),
-//		-distFallSpeed(randomEngine),  // 아래로 떨어짐
-//		distSideDrift(randomEngine)
-//	};
-//	// 회전 없이 크기만 랜덤
-//	float scale = distScale(randomEngine);
-//	p.transform.scale = { scale, scale, 1.0f };
-//	p.transform.rotate = { 0.0f, 0.0f, 0.0f };
-//
-//	// 어두운 회색/불투명도 랜덤
-//	p.color = { 0.2f, 0.2f, 0.2f, distAlpha(randomEngine) };
-//	p.lifeTime = distLifetime(randomEngine);
-//	p.currentTime = 0.0f;
-//
-//	return p;
-//}
+
 
 std::list<Particle> ParticleManager::Emit(const std::string& groupName, const Emitter& emitter, std::mt19937& randomEngine) {
 	std::list<Particle> particles;
@@ -271,9 +230,9 @@ void ParticleManager::Emit(const std::string& groupName, const Particle& particl
 
 void ParticleManager::CreateParticleGroup(const std::string& name, const std::string& textureFilePath) {
 	if (particleGroups.find(name) != particleGroups.end()) {
-		// 이미 등록된 이름이 있다면 assert로 중단(If the name is already registered, stop with assert)
+		
 		assert(false && "Particle group with the given name already exists!");
-		return; // 디버깅 중이 아니라면 중단하지 않고 반환(If not debugging, return without stopping)
+		return; 
 	}
 
 
@@ -295,18 +254,13 @@ void ParticleManager::CreateParticleGroup(const std::string& name, const std::st
 
 	newGroup.instanceBuffer = ResourceUtils::CreateBufferResource(dxCommon_->GetDevice(), sizeof(ParticleForGPU) * kNumMaxInstance);
 
-	// 리소스 매핑
+
 	HRESULT hr = newGroup.instanceBuffer->Map(0, nullptr, reinterpret_cast<void**>(&newGroup.mappedInstanceData));
 	assert(SUCCEEDED(hr));
-	/*for (int i = 0; i < initialInstanceCount; i++)
-	{
-		newGroup.mappedInstanceData[i].WVP = MyMath::MakeIdentity4x4();
-		newGroup.mappedInstanceData[i].World = MyMath::MakeIdentity4x4();
-		newGroup.mappedInstanceData[i].color = Vector4{ 1.0f,1.0f,1.0f,1.0f };
-	}*/
+	
 
 
-	// SRV 생성 (Structured Buffer )
+	// SRV (Structured Buffer )
 	newGroup.instanceSRVIndex = srvManager_->Allocate() + TextureManager::kSRVIndexTop;
 	srvManager_->CreatSRVforStruturedBuffer(
 		newGroup.instanceSRVIndex,
@@ -319,7 +273,7 @@ void ParticleManager::CreateParticleGroup(const std::string& name, const std::st
 
 
 
-	//컨테이너 설정(Container Settings)
+	
 	particleGroups[name] = std::move(newGroup);
 
 }
@@ -587,18 +541,18 @@ void ParticleManager::InitializeVertices() {
 			float u = float(index) / float(kCylinderDivide);
 			float uNext = float(index + 1) / float(kCylinderDivide);
 
-			// 삼각형 1
+			
 			vertices_.push_back({ { sin * kTopRadius, kHeight, cos * kTopRadius, 1.0f }, { u, 0.0f } });
 			vertices_.push_back({ { sinNext * kTopRadius, kHeight, cosNext * kTopRadius, 1.0f }, { uNext, 0.0f } });
 			vertices_.push_back({ { sin * kBottomRadius, 0.0f, cos * kBottomRadius, 1.0f }, { u, 1.0f } });
 
-			// 삼각형 2
+			
 			vertices_.push_back({ { sin * kBottomRadius, 0.0f, cos * kBottomRadius, 1.0f }, { u, 1.0f } });
 			vertices_.push_back({ { sinNext * kTopRadius, kHeight, cosNext * kTopRadius, 1.0f }, { uNext, 0.0f } });
 			vertices_.push_back({ { sinNext * kBottomRadius, 0.0f, cosNext * kBottomRadius, 1.0f }, { uNext, 1.0f } });
 		}
 	} else if (useRingMesh_) {
-		// 🔁 링 메쉬 생성
+		
 		const uint32_t kRingDivide = 32;
 		const float kOuterRadius = 1.0f;
 		const float kInnerRadius = 0.6f;
@@ -612,18 +566,18 @@ void ParticleManager::InitializeVertices() {
 			float u = float(index) / float(kRingDivide);
 			float uNext = float(index + 1) / float(kRingDivide);
 
-			// 삼각형 1
+			
 			vertices_.push_back({ { -sin * kOuterRadius, cos * kOuterRadius, 0.0f, 1.0f }, { u, 0.0f } });
 			vertices_.push_back({ { -sinNext * kOuterRadius, cosNext * kOuterRadius, 0.0f, 1.0f }, { uNext, 0.0f } });
 			vertices_.push_back({ { -sin * kInnerRadius, cos * kInnerRadius, 0.0f, 1.0f }, { u, 1.0f } });
 
-			// 삼각형 2
+			
 			vertices_.push_back({ { -sin * kInnerRadius, cos * kInnerRadius, 0.0f, 1.0f }, { u, 1.0f } });
 			vertices_.push_back({ { -sinNext * kOuterRadius, cosNext * kOuterRadius, 0.0f, 1.0f }, { uNext, 0.0f } });
 			vertices_.push_back({ { -sinNext * kInnerRadius, cosNext * kInnerRadius, 0.0f, 1.0f }, { uNext, 1.0f } });
 		}
 	} else {
-		// 🟦 기본 정사각형 텍스처 메쉬
+		
 		vertices_.push_back({ { -1.0f,  1.0f, 0.0f, 1.0f }, { 0.0f, 0.0f } }); // 좌상
 		vertices_.push_back({ { -1.0f, -1.0f, 0.0f, 1.0f }, { 0.0f, 1.0f } }); // 좌하
 		vertices_.push_back({ {  1.0f,  1.0f, 0.0f, 1.0f }, { 1.0f, 0.0f } }); // 우상
@@ -638,17 +592,16 @@ void ParticleManager::CreateVertexBuffer() {
 
 	auto device = dxCommon_->GetDevice();
 
-	// GPU 메모리에 버퍼 생성(Create a buffer in GPU memory)
 	vertexBufferResource_ = ResourceUtils::CreateBufferResource(device, sizeof(ParticleVertex) * vertices_.size());
-	// 버퍼 뷰 설정(Setting the buffer view)
+
 	vertexBufferView_.BufferLocation = vertexBufferResource_->GetGPUVirtualAddress();
 	vertexBufferView_.SizeInBytes = static_cast<UINT>(sizeof(ParticleVertex) * vertices_.size());
 	vertexBufferView_.StrideInBytes = sizeof(ParticleVertex);
-	// GPU 메모리 매핑(GPU Memory Mapping)
+
 	ParticleVertex* vertexDataParticle = nullptr;
 	vertexBufferResource_->Map(0, nullptr, reinterpret_cast<void**>(&vertexDataParticle));
-	// 정점 데이터 복사(Copy vertex data)
+
 	memcpy(vertexDataParticle, vertices_.data(), sizeof(ParticleVertex) * vertices_.size());
-	// 매핑 해제(Unmap)
+
 	vertexBufferResource_->Unmap(0, nullptr);
 }

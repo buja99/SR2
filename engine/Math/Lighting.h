@@ -29,7 +29,7 @@ struct SpotLightData {
 	float outerCutoff;  // 4B
 	float decay;        // 4B
 	float radius;       // 4B
-	float padding;      // 4B → 정렬용
+	float padding;      // 4B 
 };
 
 struct AmbientLightData {

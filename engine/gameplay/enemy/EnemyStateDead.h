@@ -10,10 +10,10 @@ public:
     void Exit(Enemy* enemy) override;
 
 private:
-    // 사망 연출을 보여줄 타이머
+    // Timer for the death sequence
     int deadTimer_ = 0;
 
-    // 사망 연출이 유지될 총 프레임 (예: 60프레임 = 약 1초)
+    // Total duration of the death sequence
     const int deadDuration_ = 60;
 };
 

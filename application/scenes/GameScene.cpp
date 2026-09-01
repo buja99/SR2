@@ -204,39 +204,6 @@ void GameScene::Draw() {
 	
 	//back_->Draw();
 	
-	
-
-	//// 1. 마스크 사각형 지정
-	//Object3dCommon::GetInstance()->SetStencilQuadArea(-1.0f, 1.0f, 1.0f, -1.0f, 0.0f);
-	//Object3dCommon::GetInstance()->SetStencilWriteMaskValue(0); // ← 필요 시 스텐실 참조값 설정 함수
-	//Object3dCommon::GetInstance()->SetStencilWritePipeline();   // ← 전체 1로 설정하는 PSO
-	//Object3dCommon::GetInstance()->stencilMaskSettings();       // ← 마스크 렌더링 (DrawInstanced(6))
-
-
-	//Object3dCommon::GetInstance()->SetStencilQuadArea(left, right, top, bottom, 0.0f);
-	//Object3dCommon::GetInstance()->SetStencilWriteMaskValue(0); // 스텐실 0으로 쓰기
-	//Object3dCommon::GetInstance()->SetStencilWritePipeline();   // ← 같은 PSO 사용해도 됨
-	//Object3dCommon::GetInstance()->stencilMaskSettings();
-
-	//auto commandList = DirectXCommon::GetInstance()->GetCommandList();
-	//commandList->SetGraphicsRootConstantBufferView(
-	//	9, // RootParameter Index
-	//	Object3dCommon::GetInstance()->GetPlayerRangeCB()->GetGPUVirtualAddress()
-	//);
-
-	//Vector3 playerPos = player_->GetPosition(); // Vector3 → XMFLOAT3
-	//float visibleRange = 30.0f;
-
-	//struct PlayerRangeData {
-	//	Vector3 playerPos;
-	//	float range;
-	//};
-
-	//PlayerRangeData* mapped = nullptr;
-	//Object3dCommon::GetInstance()->GetPlayerRangeCB()->Map(0, nullptr, reinterpret_cast<void**>(&mapped));
-	//mapped->playerPos = playerPos;
-	//mapped->range = visibleRange;
-	//Object3dCommon::GetInstance()->GetPlayerRangeCB()->Unmap(0, nullptr);
 
 	//skybox_->Draw(camera_->GetViewMatrix(), camera_->GetProjectionMatrix());
 

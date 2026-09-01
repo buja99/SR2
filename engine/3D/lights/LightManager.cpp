@@ -26,7 +26,7 @@ void LightManager::BindAll(ID3D12GraphicsCommandList* commandList) {
 
 void LightManager::AddLight(std::unique_ptr<ILight> light, uint32_t rootParameterIndex) {
     if (device_ && light) {
-        // 매니저에 빛이 들어오는 순간 GPU 버퍼를 생성(Initialize)합니다.
+        
         light->Initialize(device_);
     }
     lights_.push_back({ std::move(light), rootParameterIndex });

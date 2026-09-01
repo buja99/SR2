@@ -10,9 +10,9 @@ public:
     void Exit(Enemy* enemy) override;
 
 private:
-    // 추적 속도를 조절하는 변수
+    // Variable that controls the chase speed
     float chaseSpeed_ = 0.2f;
 
-    // 공격 사거리 (이 거리보다 가까워지면 공격 상태로 전환)
+    // Attack range (switch to the Attack state when the player is within this distance)
     float attackRange_ = 3.0f;
 };

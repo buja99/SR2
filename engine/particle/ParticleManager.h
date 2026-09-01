@@ -18,10 +18,10 @@
 #include <unordered_map>
 
 struct ParticleVertex {
-    Vector4 position;  // 3D 위치
+    Vector4 position; 
     Vector2 texcoord;
 };
-struct Particle //파티클 1개의 상태 (위치, 속도, 색상, 생존시간 등)
+struct Particle 
 {
     Transform transform;
     Vector3 velocity;
@@ -31,28 +31,28 @@ struct Particle //파티클 1개의 상태 (위치, 속도, 색상, 생존시간
     float currentTime;
 
 };
-struct  ParticleForGPU    //GPU에 넘길 인스턴싱용 데이터 (WVP, 색상 등)
+struct  ParticleForGPU    
 {
     Matrix4x4 WVP;
     Matrix4x4 World;
     Vector4 color;
 };
-struct Emitter          //파티클을 방출하는 발사기(Emitter) 상태 (위치, 속도, 색상, 생존시간 등)
+struct Emitter         
 {
     Transform transform;
     uint32_t count;
     float frequency;
     float frequencyTime;
 };
-struct ParticleGroup {         //파티클들의 묶음. 텍스처별로 나눔
+struct ParticleGroup {         
     std::string textureFilePath;
     uint32_t textureIndex;
-    std::list<Particle> particles;         // 파티클 리스트(particle list)
-    int instanceSRVIndex;                  // 인스턴싱 데이터용 SRV 인덱스(SRV index for instancing data)
-    ComPtr<ID3D12Resource> instanceBuffer; // 인스턴스 데이터 리소스(Instance data resource)
-    int instanceCount;                     // 인스턴스 개수(Number of instances)
-    ParticleForGPU* mappedInstanceData;    // GPU 메모리에 매핑된 데이터 포인터(Data pointer mapped to GPU memory)
-    Emitter emitter;                       // 발사기(Emitter) 상태
+    std::list<Particle> particles;         
+    int instanceSRVIndex;                  
+    ComPtr<ID3D12Resource> instanceBuffer; 
+    int instanceCount;                     
+    ParticleForGPU* mappedInstanceData;    
+    Emitter emitter;                       
 };
 
 const int32_t initialInstanceCount = 100;
@@ -91,8 +91,8 @@ public:
     void SetUseBillboard(bool use) { useBillboard_ = use; }
     bool GetUseBillboard() const { return useBillboard_; }
 
-    bool useRingMesh_ = false; // 기본은 정사각형
-    bool useCylinderMesh_ = false; // 원통 모양으로 변경
+    bool useRingMesh_ = false; 
+    bool useCylinderMesh_ = false; 
     void SetUseRingMesh(bool flag);
     void SetUseCylinderMesh(bool flag);
 

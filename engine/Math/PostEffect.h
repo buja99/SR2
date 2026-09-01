@@ -2,7 +2,7 @@
 
 struct GrayscaleSettings {
     float strength;
-    float pad[3]; // 16바이트 정렬
+    float pad[3]; // 16
 };
 struct VignetteSettings {
 	float vignetteStrength;
@@ -10,10 +10,10 @@ struct VignetteSettings {
 };
 
 struct RadialBlurSettings {
-    float centerX;       // float 4바이트
-    float centerY;       // float 4바이트
-    float blurStrength;  // float 4바이트
-    int   numSamples;    // int   4바이트
+    float centerX;       // float 4
+    float centerY;       // float 4
+    float blurStrength;  // float 4
+    int   numSamples;    // int   4
     float pad[3];
 };
 

@@ -10,7 +10,7 @@ public:
     void Update() override;
     void Bind(ID3D12GraphicsCommandList* commandList, uint32_t rootParameterIndex) override;
 
-    // SpotLight 전용 설정 함수들
+    
     void SetColor(const Vector4& color) { cpuData_.color = color; }
     void SetPosition(const Vector3& pos) { cpuData_.position = pos; }
     void SetIntensity(float intensity) { cpuData_.intensity = intensity; }

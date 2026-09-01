@@ -10,15 +10,20 @@ PostProcessManager* PostProcessManager::GetInstance() {
 }
 
 void PostProcessManager::Initialize(ID3D12Device* device) {
+
+    if (initialized_) {
+        return;
+    }
+    initialized_ = true;
     device_ = device;
 
     HRESULT hr;
 
-    // SR2님의 해상도 크기에 맞춤 (기본 1280x720 가정)
+    // Match the resolution size (assuming a default resolution of 1280x720)
     const UINT textureWidth = 1280;
     const UINT textureHeight = 720;
 
-    // 1. 렌더 타겟 플래그를 가진 텍스처 리소스 Desc 설정
+    // 1. Configure the texture resource description with the render target flag
     D3D12_RESOURCE_DESC resDesc = CD3DX12_RESOURCE_DESC::Tex2D(
         DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,
         textureWidth, textureHeight,
@@ -33,7 +38,7 @@ void PostProcessManager::Initialize(ID3D12Device* device) {
     clearValue.Color[0] = 0.0f; clearValue.Color[1] = 0.0f; clearValue.Color[2] = 0.0f; clearValue.Color[3] = 1.0f;
 
     for (int i = 0; i < kNumPingPongBuffers; ++i) {
-        // 2. 핑퐁 버퍼 텍스처 리소스 생성
+        // 2. Create the ping-pong buffer texture resources
         hr = device_->CreateCommittedResource(
             &heapProps, D3D12_HEAP_FLAG_NONE, &resDesc,
             D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, &clearValue,
@@ -41,11 +46,11 @@ void PostProcessManager::Initialize(ID3D12Device* device) {
         );
         assert(SUCCEEDED(hr));
 
-        // 3. ⭐ [정정] SrvManager 구조에 맞춘 SRV 할당 및 생성
-        // SrvManager::Allocate()를 통해 사용 가능한 빈 인덱스를 먼저 받습니다.
+        // 3. Allocate and create SRVs using the SrvManager
+        // Get an available SRV index using SrvManager::Allocate().
         uint32_t srvIndex = SrvManager::GetInstance()->Allocate();
 
-        // SrvManager에 이미 구현되어 있는 Texture2D SRV 생성 함수를 호출합니다!
+        // Call the Texture2D SRV creation function provided by SrvManager.
         SrvManager::GetInstance()->CreatSRVforTexture2D(
             srvIndex,
             pingPongBuffers_[i].Get(),
@@ -53,12 +58,9 @@ void PostProcessManager::Initialize(ID3D12Device* device) {
             1
         );
 
-        // 생성된 인덱스로부터 진짜 GPU 핸들을 얻어와 멤버 변수에 저장합니다.
+        // Get the GPU handle from the allocated index and store it in the member variable.
         pingPongSRVHandles_[i] = SrvManager::GetInstance()->GetGPUDescriptorHandle(srvIndex);
 
-        // 4. RTV 핸들 생성 및 저장
-        // RTV 매니저 클래스가 따로 있다면 그 구조를 쓰시거나, 
-        // 현재 구조에서 RTV 힙 핸들을 만드는 방식으로 매핑해 주어야 합니다.
         // pingPongRTVHandles_[i] = RtvManager::GetInstance()->AllocateCpuHandle();
         // device_->CreateRenderTargetView(pingPongBuffers_[i].Get(), nullptr, pingPongRTVHandles_[i]);
     }
@@ -69,6 +71,7 @@ void PostProcessManager::Cleanup() {
     for (int i = 0; i < kNumPingPongBuffers; ++i) {
         pingPongBuffers_[i].Reset();
     }
+    initialized_ = false;
 }
 
 void PostProcessManager::AddEffect(std::unique_ptr<IPostEffect> effect) {
@@ -87,7 +90,7 @@ void PostProcessManager::Draw(ID3D12GraphicsCommandList* commandList, uint32_t o
 
     SrvManager::GetInstance()->PreDraw();
 
-    // ⭐ [정정] GetGPUHandle 대신 실제 구현된 GetGPUDescriptorHandle 호출!
+    // Call the actual GetGPUDescriptorHandle function instead of GetGPUHandle.
     D3D12_GPU_DESCRIPTOR_HANDLE currentInputSRV = SrvManager::GetInstance()->GetGPUDescriptorHandle(offscreenSRVIndex);
 
     int currentTargetIndex = 0;
@@ -97,10 +100,9 @@ void PostProcessManager::Draw(ID3D12GraphicsCommandList* commandList, uint32_t o
         bool isLast = (i == effects_.size() - 1);
 
         if (isLast) {
-            // 마지막 이펙트는 최종 백버퍼 화면에 그립니다.
             DirectXCommon::GetInstance()->SetBackBufferAsRenderTarget();
         } else {
-            // 중간 이펙트는 임시 핑퐁 버퍼의 RTV 상태로 전환 후 타겟 설정
+            // For intermediate effects, transition the temporary ping-pong buffer to the render target state and set it as the render target.
             D3D12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
                 pingPongBuffers_[currentTargetIndex].Get(),
                 D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
@@ -115,12 +117,9 @@ void PostProcessManager::Draw(ID3D12GraphicsCommandList* commandList, uint32_t o
             commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
         }
 
-        // ⭐ 다형성 렌더링 호출
-        // (참고: 각 이펙트의 Draw 함수가 uint32_t 인덱스 대신 D3D12_GPU_DESCRIPTOR_HANDLE을 받도록 인터페이스를 고치면 가장 좋습니다)
-        // effect->Draw(commandList, currentInputSRV);
 
         if (!isLast) {
-            // 다음 이펙트가 읽을 수 있도록 SRV 상태로 원복
+            // Transition back to the SRV state so the next effect can read from it.
             D3D12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
                 pingPongBuffers_[currentTargetIndex].Get(),
                 D3D12_RESOURCE_STATE_RENDER_TARGET,
@@ -128,10 +127,10 @@ void PostProcessManager::Draw(ID3D12GraphicsCommandList* commandList, uint32_t o
             );
             commandList->ResourceBarrier(1, &barrier);
 
-            // 입력 핸들을 방금 그린 텍스처의 SRV 핸들로 핑퐁 체인지!
+            // Set the input handle to the SRV handle of the texture just rendered.
             currentInputSRV = pingPongSRVHandles_[currentTargetIndex];
 
-            // 0 -> 1 -> 0 -> 1 교차 토글
+            // Toggle the ping-pong buffer alternately: 0 -> 1 -> 0 -> 1.
             currentTargetIndex = 1 - currentTargetIndex;
         }
     }

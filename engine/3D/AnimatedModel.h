@@ -45,5 +45,7 @@ private:
     
     ModelData LoadAnimatedModelFile(const std::string& directoryPath, const std::string& filename);
 
+    ModelData ParseAnimatedModelData(const aiScene* scene);
+
 };
 

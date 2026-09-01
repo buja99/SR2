@@ -28,17 +28,8 @@ public:
 
 	void Finalize();
 
-	//const DirectX::ScratchImage& GetTextureImage(uint32_t srvIndex) const;
-
-	
-
-	//uint32_t LoadTextureByPath(const std::string& textureFilePath);
-	//uint32_t GetOrLoadTextureIndex(const std::string& textureFilePath);
-	//void ChangeTexture(uint32_t textureIndex, const std::string& newTextureFilePath);
-
 	ComPtr<ID3D12Resource> CreateTextureResource(const DirectX::TexMetadata& metadata);
-	//D3D12_CPU_DESCRIPTOR_HANDLE GetCPUDescriptorHandle(uint32_t index);
-	//D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(uint32_t index);
+	
 	D3D12_GPU_DESCRIPTOR_HANDLE GetSrvHandleGPU(const std::string& filePath);
 
 	uint32_t GetTextureIndexByFilepath(const std::string& filePath);

@@ -1,7 +1,7 @@
 #pragma once
 #include "IEnemyState.h"
 
-// 전방 선언
+
 class Enemy;
 
 class EnemyStateAttack : public IEnemyState {
@@ -11,10 +11,10 @@ public:
     void Exit(Enemy* enemy) override;
 
 private:
-    // 공격 상태가 시작된 후 경과된 프레임을 세는 타이머
+    // Timer that counts the frames elapsed since entering the attack state
     int attackTimer_ = 0;
 
-    // 전체 공격 동작에 걸리는 총 프레임 수 (예: 60프레임 = 약 1초)
-    // 현재 프로젝트에 애니메이션 완료 체크 기능이 없다면, 이 타이머를 기준으로 상태를 전환합니다.
+    // Total number of frames for the entire attack action (e.g., 60 frames ≈ 1 second)
+    // If the project does not have an animation completion check, use this timer to transition between states.
     const int attackDuration_ = 60;
 };

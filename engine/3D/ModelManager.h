@@ -9,6 +9,8 @@ class DirectXCommon;
 class ModelCommon;
 class Object3dCommon;
 
+
+
 class ModelManager
 {
 

@@ -46,10 +46,12 @@ private:
     static constexpr int kNumPingPongBuffers = 2;
     ComPtr<ID3D12Resource> pingPongBuffers_[kNumPingPongBuffers];
 
-    // 쉐이더 입력용 SRV 핸들 정보 (SrvManager에서 할당받은 핸들/인덱스 보관)
+    // Store the SRV handle and index allocated by SrvManager for shader input.
     D3D12_GPU_DESCRIPTOR_HANDLE pingPongSRVHandles_[kNumPingPongBuffers];
 
-    // 렌더 타겟용 RTV 핸들 정보 (각각의 임시 도화지용 뷰)
+    // Store the RTV handles for the render targets (views for each temporary rendering buffer).
     D3D12_CPU_DESCRIPTOR_HANDLE pingPongRTVHandles_[kNumPingPongBuffers];
+
+    bool initialized_ = false;
 };
 

@@ -7,15 +7,15 @@ void AmbientLight::Initialize(ID3D12Device* device) {
 
     constBuffer_ = ResourceUtils::CreateBufferResource(device, sizeof(AmbientLightData));
 
-    // 2. CPU 맵핑
+    
     HRESULT hr = constBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&data_));
     assert(SUCCEEDED(hr));
 
     hr = constBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&data_));
     assert(SUCCEEDED(hr));
 
-    // 기본값 세팅
-    cpuData_.color = { 1.0f, 1.0f, 1.0f, 1.0f }; // 흰색 환경광
+  
+    cpuData_.color = { 1.0f, 1.0f, 1.0f, 1.0f }; 
 
     Update();
 }

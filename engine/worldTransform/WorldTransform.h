@@ -50,6 +50,4 @@ public:
 
     void Cleanup();
 };
-//
-//// 定数バッファ生成関数の宣言（実装은 보통別ファイル에서 따로 작성함）
-//ComPtr<ID3D12Resource> CreateBufferResource(size_t size);
+

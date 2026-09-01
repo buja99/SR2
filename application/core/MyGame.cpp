@@ -29,21 +29,16 @@ void MyGame::Update() {
 
 void MyGame::Draw() {
 
-	// 1. Off-Screen Rendering
 	dxCommon_->RenderTexturePreDraw();
 	srvManager_->PreDraw();
 	sceneManager_->Draw();
 	dxCommon_->RenderTexturePostDraw();
-	//dxCommon_->PreDraw();
-	// 2. Copy to Swap Chain
-	//dxCommon_->CopyRenderTextureToSwapChain();
-	PostProcessManager::GetInstance()->Initialize(dxCommon_->GetDevice().Get());
-
+	
 	if (!PostProcessManager::GetInstance()->HasAnyEffects()) {
-		// 체인에 등록된 이펙트가 하나도 없으면 원본 화면을 그대로 스왑체인(화면)에 복사
+		// If no effects are registered in the chain, copy the original image directly to the swap chain.
 		dxCommon_->CopyRenderTextureToSwapChain();
 	} else {
-		// 체인에 이펙트가 하나라도 있으면 매니저에게 통합 렌더링(후처리) 위임
+		// If at least one effect is registered in the chain, delegate post-processing to the manager.
 		PostProcessManager::GetInstance()->Draw(
 			dxCommon_->GetCommandList().Get(),
 			dxCommon_->GetOffscreenSRVIndex()

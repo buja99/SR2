@@ -5,7 +5,7 @@
 #include "MyMath.h"
 
 void PlayerStateMove::Enter(Player* player) {
-    // 달리기 애니메이션 재생
+   
 }
 
 void PlayerStateMove::Update(Player* player) {
@@ -13,19 +13,19 @@ void PlayerStateMove::Update(Player* player) {
     Vector3 move = { 0.0f, 0.0f, 0.0f };
     float speed = 0.5f;
 
-    // 이동 로직
+  
     if (input->PushKey(DIK_LEFT))  move.x -= 1.0f;
     if (input->PushKey(DIK_RIGHT)) move.x += 1.0f;
     if (input->PushKey(DIK_UP))    move.z += 1.0f;
     if (input->PushKey(DIK_DOWN))  move.z -= 1.0f;
 
-    // 아무 키도 누르지 않았다면 다시 '대기' 상태로 돌아감!
+   
     if (move.x == 0.0f && move.z == 0.0f) {
         player->ChangeState(std::make_unique<PlayerStateIdle>());
         return;
     }
 
-    // 이동 적용
+  
     move = MyMath::normalize(move);
     move = MyMath::Multiply(move, speed);
 

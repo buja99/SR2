@@ -58,16 +58,13 @@ void TitleScene::Initialize() {
 	
 	
 	// Area Light
-	// 카메라 생성
 	camera_ = std::make_unique<Camera>();
 	camera_->SetEye({ 0.0f, 4.0f, -10.0f });
 	camera_->SetTarget({ 0.0f, 0.0f, 0.0f });
 
-	// 모델에 카메라 설정
 	model_->SetCamera(camera_.get());
 	testModel_->SetCamera(camera_.get());
 
-	// 씬 공통 렌더 설정 (이것도 보통 필요함)
 	Object3dCommon::GetInstance()->SetDefaultCamera(camera_.get());
 
 	TextureManager::GetInstance()->LoadTexture("resources/title.png");
@@ -112,7 +109,6 @@ void TitleScene::Update() {
 	Vector3 rotate = model_->GetRotate();
 	Vector3 translate = model_->GetTranslate();
 
-	// 슬라이더로 값 수정
 	ImGui::DragFloat3("Scale", &scale.x, 0.1f);
 	ImGui::DragFloat3("Rotate", &rotate.x, 0.1f);
 	ImGui::DragFloat3("Translate", &translate.x, 0.1f);
@@ -148,7 +144,7 @@ void TitleScene::Update() {
 		testModel_->SetUseAreaLight(useArea);
 	}
 
-	// Point Light 상세 조정
+	// Point Light 
 	if (usePoint) {
 		static Vector3 position = { 0.0f, 5.0f, 0.0f };
 		static float intensity = 1.0f;
@@ -163,7 +159,7 @@ void TitleScene::Update() {
 		
 	}
 
-	// Spot Light 상세 조정
+	// Spot Light 
 	if (useSpot) {
 		static Vector3 position = { 0.0f, 5.0f, 5.0f };
 		static Vector3 direction = { 0.0f, -1.0f, -1.0f };
@@ -184,7 +180,7 @@ void TitleScene::Update() {
 		
 	}
 
-	// Area Light 상세 조정
+	// Area Light 
 	if (useArea) {
 		static Vector3 position = { 0.0f, 5.0f, 0.0f };
 		static Vector3 right = { 1.0f, 0.0f, 0.0f };

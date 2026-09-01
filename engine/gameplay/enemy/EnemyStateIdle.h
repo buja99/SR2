@@ -7,6 +7,6 @@ public:
     void Update(Enemy* enemy) override;
     void Exit(Enemy* enemy) override;
 private:
-    int timer_ = 0; // 대기 시간 측정용
+    int timer_ = 0; 
 };
 

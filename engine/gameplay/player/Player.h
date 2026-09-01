@@ -68,7 +68,7 @@ private:
 
 	bool isAttacking_ = false;
 	int attackTimer_ = 0;
-	const int attackDuration_ = 60; // 60프레임
+	const int attackDuration_ = 60; 
 	float originalWeaponAngleX_ = 0.0f;
 	bool hasHit_ = false;
 	bool isHitProcessed_ = false;

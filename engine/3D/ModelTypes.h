@@ -34,9 +34,9 @@ struct Node {
 };
 
 struct SubMesh {
-	uint32_t indexStart = 0;   // modelData.indices 기준 시작 위치
-	uint32_t indexCount = 0;   // 그릴 인덱스 개수
-	uint32_t materialIndex = 0; // 지금은 0 고정(머티리얼 1개만 사용)
+	uint32_t indexStart = 0;   
+	uint32_t indexCount = 0;   
+	uint32_t materialIndex = 0; 
 };
 
 struct ModelData {

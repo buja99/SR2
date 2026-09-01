@@ -40,7 +40,7 @@ void SceneManager::Update() {
 
 
 		scene_->Initialize();
-		nextSceneName_.clear(); // 다음 씬 이름 초기화
+		nextSceneName_.clear(); 
 	}
 
 	if (scene_) {

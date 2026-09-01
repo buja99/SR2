@@ -7,14 +7,14 @@ void AreaLight::Initialize(ID3D12Device* device) {
 
     constBuffer_ = ResourceUtils::CreateBufferResource(device, sizeof(AreaLightData));
 
-    // 2. CPU 맵핑
+    
     HRESULT hr = constBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&data_));
     assert(SUCCEEDED(hr));
 
     hr = constBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&data_));
     assert(SUCCEEDED(hr));
 
-    // 기본값 세팅 (일반적인 창문 크기의 빛)
+    
     cpuData_.color = { 1.0f, 1.0f, 1.0f, 1.0f };
     cpuData_.position = { 0.0f, 5.0f, 0.0f };
     cpuData_.intensity = 1.0f;

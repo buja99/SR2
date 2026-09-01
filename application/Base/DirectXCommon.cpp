@@ -20,7 +20,7 @@ using namespace StringUtility;
 const uint32_t DirectXCommon::kMaxSRVCount = 512;
 
 DirectXCommon* DirectXCommon::GetInstance() {
-	static DirectXCommon instance; //스타틱 멤버변수로 변경
+	static DirectXCommon instance; 
 	return &instance;
 }
 
@@ -346,7 +346,7 @@ void DirectXCommon::InitializeScissor() {
 
 
 void DirectXCommon::RenderTexturePreDraw() {
-	// 리소스 상태: COMMON → RENDER_TARGET
+	// COMMON → RENDER_TARGET
 	D3D12_RESOURCE_BARRIER barrier{};
 	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
@@ -357,20 +357,20 @@ void DirectXCommon::RenderTexturePreDraw() {
 	commandList->ResourceBarrier(1, &barrier);
 	//D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = offscreenDSVHandle_;
-	// RTV만 설정 (Depth는 사용 안 함)
+	// Set only the RTV (no depth buffer)
 	commandList->OMSetRenderTargets(1, &offscreenRTVHandle_, FALSE, &dsvHandle);
 
 	// Clear
 	float clearColor[] = { 1.0f, 0.0f, 0.0f, 1.0f };
 	commandList->ClearRenderTargetView(offscreenRTVHandle_, clearColor, 0, nullptr);
 	commandList->ClearDepthStencilView(offscreenDSVHandle_, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
-	// 뷰포트 / 시저
+	// Set the viewport and scissor rect
 	commandList->RSSetViewports(1, &viewport);
 	commandList->RSSetScissorRects(1, &scissorRect);
 }
 
 void DirectXCommon::RenderTexturePostDraw() {
-	// 리소스 상태: RENDER_TARGET → PIXEL_SHADER_RESOURCE
+	// Transition resource state: RENDER_TARGET -> PIXEL_SHADER_RESOURCE
 	D3D12_RESOURCE_BARRIER barrier{};
 	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
@@ -481,17 +481,17 @@ void DirectXCommon::PostDraw() {
 }
 
 void DirectXCommon::SetBackBufferAsRenderTarget() {
-	// 1. 현재 활성화된 스왑체인의 백버퍼 인덱스(0 또는 1)를 가져옵니다.
+	// Get the index of the current swap chain back buffer (0 or 1)
 	UINT backBufferIndex = swapChain->GetCurrentBackBufferIndex();
 
-	// 2. RTV 힙의 시작 주소에서 현재 백버퍼 인덱스만큼 오프셋(거리)을 이동하여 CPU 핸들을 구합니다.
+	// Offset from the start of the RTV heap by the current back buffer index to get the CPU handle.
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 	rtvHandle.ptr += backBufferIndex * descriptorSizeRTV;
 
-	// 3. DSV(깊이 스텐실) 힙의 시작 주소에서 CPU 핸들을 가져옵니다.
+	// 3. Get the CPU handle from the start of the DSV (Depth-Stencil View) heap.
 	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 
-	// 4. 파이프라인의 렌더 타겟을 최종 백버퍼 화면으로 교체합니다.
+	// 4. Set the final back buffer as the pipeline's render target.
 	commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
 }
 
@@ -652,7 +652,7 @@ ComPtr<ID3D12Resource> DirectXCommon::CreateRenderTextureResource(ComPtr<ID3D12D
 		&heapProperties,
 		D3D12_HEAP_FLAG_NONE,
 		&resourceDesc,
-		D3D12_RESOURCE_STATE_COMMON,  // 초기 상태를 COMMON으로 설정
+		D3D12_RESOURCE_STATE_COMMON,  // Set the initial resource state to COMMON
 		&clearValue,
 		IID_PPV_ARGS(&resource));
 	assert(SUCCEEDED(hr));
@@ -669,7 +669,7 @@ void DirectXCommon::InitializeOffscreenRenderTarget() {
 		device, WinApp::kClientWidth, WinApp::kClientHeight, format, clearColor);
 	offscreenRenderTarget_->SetName(L"OffscreenRenderTarget");
 
-	// RTV Heap 생성 및 RTV
+	// Create the RTV heap and RTV
 	offscreenRTVHeap_ = CreateDescriptorHeap(device, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 1, false);
 	offscreenRTVHandle_ = offscreenRTVHeap_->GetCPUDescriptorHandleForHeapStart();
 
@@ -679,7 +679,7 @@ void DirectXCommon::InitializeOffscreenRenderTarget() {
 
 	device->CreateRenderTargetView(offscreenRenderTarget_.Get(), &rtvDesc, offscreenRTVHandle_);
 
-	// 🔽 SRVManager를 통해 SRV 등록
+	// Register the SRV through the SRVManager
 
 	if (!SrvManager::GetInstance()->CanAllocate()) {
 		OutputDebugStringA("ERROR: SRVManager ran out of descriptors!\n");
@@ -697,7 +697,7 @@ void DirectXCommon::InitializeOffscreenRenderTarget() {
 void DirectXCommon::InitializeCopyPipeline() {
 	HRESULT hr;
 
-	// 셰이더 컴파일
+	// Compile the shaders
 	ComPtr<IDxcUtils> dxcUtils;
 	ComPtr<IDxcCompiler3> dxcCompiler;
 	hr = DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&dxcUtils));
@@ -708,7 +708,7 @@ void DirectXCommon::InitializeCopyPipeline() {
 	auto vs = CompileShader(L"Resources/shaders/CopyImage.VS.hlsl", L"vs_6_0", dxcUtils.Get(), dxcCompiler.Get(), includeHandler.Get());
 	auto ps = CompileShader(L"Resources/shaders/CopyImage.PS.hlsl", L"ps_6_0", dxcUtils.Get(), dxcCompiler.Get(), includeHandler.Get());
 
-	// 루트 시그니처 생성 (t0 : SRV, s0 : Sampler)
+	// Create the root signature (t0: SRV, s0: Sampler)
 	CD3DX12_DESCRIPTOR_RANGE range;
 	range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
 
@@ -725,7 +725,7 @@ void DirectXCommon::InitializeCopyPipeline() {
 	hr = D3D12SerializeRootSignature(&rsDesc, D3D_ROOT_SIGNATURE_VERSION_1, &sigBlob, &errBlob);
 	hr = device->CreateRootSignature(0, sigBlob->GetBufferPointer(), sigBlob->GetBufferSize(), IID_PPV_ARGS(&copyRootSignature_));
 
-	// PSO 생성
+	// PSO
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc{};
 	psoDesc.pRootSignature = copyRootSignature_.Get();
 	psoDesc.VS = { vs->GetBufferPointer(), vs->GetBufferSize() };
@@ -735,7 +735,7 @@ void DirectXCommon::InitializeCopyPipeline() {
 	psoDesc.DepthStencilState.DepthEnable = FALSE;
 	psoDesc.DepthStencilState.StencilEnable = FALSE;
 	psoDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
-	psoDesc.InputLayout = { nullptr, 0 }; // 입력 레이아웃 없음
+	psoDesc.InputLayout = { nullptr, 0 }; // No input layout
 	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	psoDesc.NumRenderTargets = 1;
 	psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
@@ -747,7 +747,7 @@ void DirectXCommon::InitializeCopyPipeline() {
 void DirectXCommon::CopyRenderTextureToSwapChain() {
 	UINT backBufferIndex = swapChain->GetCurrentBackBufferIndex();
 
-	// 리소스 상태 전환: SWAPCHAIN의 Present → RenderTarget
+	// Transition the resource state: SWAPCHAIN의 Present → RenderTarget
 	D3D12_RESOURCE_BARRIER barrier{};
 	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
@@ -757,7 +757,7 @@ void DirectXCommon::CopyRenderTextureToSwapChain() {
 	barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 	commandList->ResourceBarrier(1, &barrier);
 
-	// RTV 설정
+	// RTV
 	commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], FALSE, nullptr);
 	commandList->RSSetViewports(1, &viewport);
 	commandList->RSSetScissorRects(1, &scissorRect);
@@ -767,31 +767,24 @@ void DirectXCommon::CopyRenderTextureToSwapChain() {
 		return;
 	}
 
-	// 루트시그니처, 파이프라인 설정
+	// Set the root signature and pipeline state
 	commandList->SetGraphicsRootSignature(copyRootSignature_.Get());
 	commandList->SetPipelineState(copyPipelineState_.Get());
-
-	//// 디스크립터 힙 설정 - SRV 힙만 사용
-	//ID3D12DescriptorHeap* ppHeaps[] = { offscreenSRVHeap_.Get() };
-	//commandList->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
-
-	//// SRV 설정
-	//commandList->SetGraphicsRootDescriptorTable(0, offscreenSRVHandle_);
 
 	SrvManager::GetInstance()->PreDraw();
 	SrvManager::GetInstance()->SetGraphicsRootDesciptorTable(0, offscreenSRVIndex_);
 
-	// 삼각형 1개 (3개 정점)
+	// Draw one triangle (3 vertices)
 	commandList->DrawInstanced(3, 1, 0, 0);
 
 
 }
 
 void DirectXCommon::InitializeOffscreenDSV() {
-	// 오프스크린용 DepthStencil 리소스 생성
+	// Create the depth-stencil resource for offscreen rendering
 	offscreenDepthStencilBuffer_ = CreateDepthStencilTextureResource(device, WinApp::kClientWidth, WinApp::kClientHeight);
 
-	// Heap 생성
+	// Create the Heap 
 	D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc{};
 	dsvHeapDesc.NumDescriptors = 1;
 	dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
@@ -800,7 +793,7 @@ void DirectXCommon::InitializeOffscreenDSV() {
 	assert(SUCCEEDED(hr));
 	offscreenDSVHeap_->SetName(L"OffscreenDSVHeap");
 
-	// DSV 생성
+	// Create the DSV
 	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
 	dsvDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
 	dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;

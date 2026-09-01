@@ -14,7 +14,7 @@ void Animator::Play(const AnimationData& anim, bool loop, float startTime) {
 }
 
 void Animator::Update(float deltaTime, Skeleton& skeleton) {
-    // 애니메이션 데이터가 없거나 정지 상태면 스킵
+    
     if (!currentAnim_ || paused_) {
         return;
     }
@@ -25,10 +25,10 @@ void Animator::Update(float deltaTime, Skeleton& skeleton) {
         return;
     }
 
-    // 시간 진행
+    
     time_ += deltaTime * speed_;
 
-    // 루프 or 종료 처리
+   
     if (loop_) {
         time_ = fmodf(time_, anim.duration);
     } else if (time_ >= anim.duration) {
@@ -37,7 +37,7 @@ void Animator::Update(float deltaTime, Skeleton& skeleton) {
         return;
     }
 
-    // 각 채널(본 단위) 순회
+    
     for (const auto& channel : anim.channels) {
         auto it = skeleton.boneIndexMap.find(channel.nodeName);
         if (it == skeleton.boneIndexMap.end()) continue;
@@ -45,13 +45,13 @@ void Animator::Update(float deltaTime, Skeleton& skeleton) {
         int boneIndex = it->second;
         if (boneIndex < 0 || boneIndex >= skeleton.bones.size()) continue;
 
-        Bone& bone = skeleton.bones[boneIndex]; // ✅ 매번 참조를 만들어두면 깔끔함
+        Bone& bone = skeleton.bones[boneIndex]; 
 
         Vector3 pos = bone.transform.translate;
         Vector3 scl = bone.transform.scale;
         Quaternion rot = bone.transform.rotate;
 
-        // --- 위치 보간 ---
+        
         if (channel.translate.keyframes.size() >= 2) {
             const auto& keys = channel.translate.keyframes;
             size_t idx = 0;
@@ -62,7 +62,7 @@ void Animator::Update(float deltaTime, Skeleton& skeleton) {
             pos = MyMath::Lerp(k0.value, k1.value, t);
         }
 
-        // --- 스케일 보간 ---
+        
         if (channel.scale.keyframes.size() >= 2) {
             const auto& keys = channel.scale.keyframes;
             size_t idx = 0;
@@ -73,7 +73,7 @@ void Animator::Update(float deltaTime, Skeleton& skeleton) {
             scl = MyMath::Lerp(k0.value, k1.value, t);
         }
 
-        // --- 회전 보간 (Slerp) ---
+        
         if (channel.rotate.keyframes.size() >= 2) {
             const auto& keys = channel.rotate.keyframes;
             size_t idx = 0;
@@ -84,12 +84,12 @@ void Animator::Update(float deltaTime, Skeleton& skeleton) {
             rot = MyMath::Slerp(k0.value, k1.value, t);
         }
 
-        // ✅ ① 변환값을 Bone의 transform에 기록
+        
         bone.transform.scale = scl;
         bone.transform.rotate = rot;
         bone.transform.translate = pos;
 
-        // ✅ ② 실제 localMatrix 생성
+        
         bone.localMatrix = MyMath::MakeAffineMatrix(
             bone.transform.scale,
             MyMath::QuaternionToEuler(bone.transform.rotate),
@@ -97,7 +97,7 @@ void Animator::Update(float deltaTime, Skeleton& skeleton) {
         );
     }
 
-    // ✅ 모든 본의 월드 행렬 갱신
+    
     skeleton.UpdateWorldMatrix();
 }
 

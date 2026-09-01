@@ -69,8 +69,8 @@ private:
 	void CreateRootSignature();
 	void CreateGraphicsPipeline();
 
-	void CreateStencilWritePipeline(); // 스텐실 값 기록용
-	void CreateStencilTestPipeline();  // 값이 1인 경우에만 통과
+	void CreateStencilWritePipeline(); 
+	void CreateStencilTestPipeline();  
 
 	ComPtr<ID3D12Device> device;
 
@@ -79,7 +79,7 @@ private:
 
 	ComPtr<ID3D12PipelineState> stencilMaskPipelineState_;
 	ComPtr<ID3D12RootSignature> stencilMaskRootSignature_;
-	ComPtr<ID3D12PipelineState> stencilTestPipelineState_; // EQUAL 조건용
+	ComPtr<ID3D12PipelineState> stencilTestPipelineState_; 
 
 	ComPtr<ID3D12Resource> stencilMaskVertexBuffer_;
 	D3D12_VERTEX_BUFFER_VIEW stencilMaskVBView_{};

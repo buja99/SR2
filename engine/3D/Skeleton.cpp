@@ -15,12 +15,12 @@ void Skeleton::Initialize(const aiScene* scene) {
         bone.name = node->mName.C_Str();
         bone.parentIndex = parentIndex;
 
-        // Assimp 행렬(row-major) → DirectX용(row-major)로 변환 (전치)
+        // Convert the Assimp matrix to the DirectX format by transposing it.
         aiMatrix4x4 aiLocal = node->mTransformation;
         aiLocal.Transpose();
         bone.localMatrix = MyMath::ConvertMatrix(aiLocal);
 
-        // 아직 worldMatrix는 갱신 전
+        
         bone.worldMatrix = MyMath::MakeIdentity4x4();
         bone.offsetMatrix = MyMath::MakeIdentity4x4();
 
@@ -32,7 +32,7 @@ void Skeleton::Initialize(const aiScene* scene) {
             bones[parentIndex].children.push_back(thisIndex);
         }
 
-        // 자식 노드 순회
+        
         for (uint32_t i = 0; i < node->mNumChildren; ++i) {
             traverse(node->mChildren[i], thisIndex);
         }
@@ -40,10 +40,10 @@ void Skeleton::Initialize(const aiScene* scene) {
 
     traverse(scene->mRootNode, -1);
 
-    // 루트 본 인덱스 설정
+    
     rootIndex = bones.empty() ? -1 : 0;
 
-    // 첫 번째 업데이트 호출로 worldMatrix 초기화
+    
     UpdateWorldMatrix();
 
 }

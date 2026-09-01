@@ -4,44 +4,81 @@ const uint32_t SrvManager::kMaxSRVCount = 512;
 
 
 void SrvManager::Initialize(DirectXCommon* dxCommon) {
+
 	OutputDebugStringA("SrvManager::Initialize() called\n");
+
 	directXCommon = dxCommon;
 
+	useIndex = 0;
+	freeList.clear();
+
 	if (!directXCommon) {
-		OutputDebugStringA("ERROR: SrvManager::Initialize() - directXCommon is null!\n");
+		OutputDebugStringA(
+			"ERROR: SrvManager::Initialize() - directXCommon is null!\n");
 		return;
 	}
 
-	srvDescriptorHeap = dxCommon->CreateDescriptorHeap(dxCommon->GetDevice(),
-		D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, kMaxSRVCount, true);
+	srvDescriptorHeap = dxCommon->CreateDescriptorHeap(
+		dxCommon->GetDevice(),
+		D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
+		kMaxSRVCount,
+		true
+	);
 
 	if (!srvDescriptorHeap) {
-		OutputDebugStringA("ERROR: SrvManager::Initialize() - Failed to create descriptor heap!\n");
+		OutputDebugStringA(
+			"ERROR: SrvManager::Initialize() - Failed to create descriptor heap!\n");
 		return;
 	}
+
 	srvDescriptorHeap->SetName(L"SRVManagerSrvHeap");
 
-	descriptorSize = dxCommon->GetDevice()->GetDescriptorHandleIncrementSize(
-		D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	descriptorSize =
+		dxCommon->GetDevice()->GetDescriptorHandleIncrementSize(
+			D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV
+		);
 }
 
 uint32_t SrvManager::Allocate() {
 
+	if (!freeList.empty()) {
+		uint32_t index = freeList.back();
+		freeList.pop_back();
+
+#ifdef _DEBUG
+		char buffer[128];
+		sprintf_s(
+			buffer,
+			"SRV Reuse: %u / %u\n",
+			index,
+			kMaxSRVCount
+		);
+		OutputDebugStringA(buffer);
+#endif
+
+		return index;
+	}
+
+#ifdef _DEBUG
+	char buffer[128];
+	sprintf_s(
+		buffer,
+		"SRV Allocate: %u / %u\n",
+		useIndex,
+		kMaxSRVCount
+	);
+	OutputDebugStringA(buffer);
+#endif
+
 	assert(useIndex < kMaxSRVCount);
 
-	int index = useIndex;
-
-	useIndex++;
-
-	return index;
-
-
+	return useIndex++;
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE SrvManager::GetCPUDescriptorHandle(uint32_t index) {
 	if (!srvDescriptorHeap) {
 		OutputDebugStringA("ERROR: SrvManager::GetCPUDescriptorHandle() - srvDescriptorHeap is null!\n");
-		return {}; // 빈 핸들 반환
+		return {}; 
 	}
 
 	D3D12_CPU_DESCRIPTOR_HANDLE handleCPU = srvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
@@ -52,7 +89,7 @@ D3D12_CPU_DESCRIPTOR_HANDLE SrvManager::GetCPUDescriptorHandle(uint32_t index) {
 D3D12_GPU_DESCRIPTOR_HANDLE SrvManager::GetGPUDescriptorHandle(uint32_t index) {
 	if (!srvDescriptorHeap) {
 		OutputDebugStringA("ERROR: SrvManager::GetGPUDescriptorHandle() - srvDescriptorHeap is null!\n");
-		return {}; // 빈 핸들 반환
+		return {}; 
 	}
 
 	D3D12_GPU_DESCRIPTOR_HANDLE handleGPU = srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart();
@@ -108,7 +145,7 @@ void SrvManager::SetGraphicsRootDesciptorTable(UINT RootPameterIndex, uint32_t s
 }
 
 bool SrvManager::CanAllocate() const {
-	return useIndex < kMaxSRVCount;
+	return !freeList.empty() || useIndex < kMaxSRVCount;
 }
 
 void SrvManager::Finalize() {

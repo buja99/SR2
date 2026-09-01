@@ -399,14 +399,14 @@ namespace MyMath {
 		obb.center = GetTranslate(wt.matWorld_);
 		obb.halfSize = Multiply(modelSize, 0.5f);
 
-		// 로컬 축을 world 회전으로 변환
+
 		Matrix4x4 rotMat = MakeRotateZMatrix(wt.rotate_.z);
 		rotMat = Multiply(rotMat, MakeRotateYMatrix(wt.rotate_.y));
 		rotMat = Multiply(rotMat, MakeRotateXMatrix(wt.rotate_.x));
 
-		obb.axis[0] = { rotMat.m[0][0], rotMat.m[0][1], rotMat.m[0][2] }; // X축
-		obb.axis[1] = { rotMat.m[1][0], rotMat.m[1][1], rotMat.m[1][2] }; // Y축
-		obb.axis[2] = { rotMat.m[2][0], rotMat.m[2][1], rotMat.m[2][2] }; // Z축
+		obb.axis[0] = { rotMat.m[0][0], rotMat.m[0][1], rotMat.m[0][2] }; // X
+		obb.axis[1] = { rotMat.m[1][0], rotMat.m[1][1], rotMat.m[1][2] }; // Y
+		obb.axis[2] = { rotMat.m[2][0], rotMat.m[2][1], rotMat.m[2][2] }; // Z
 
 		return obb;
 	}
@@ -416,7 +416,7 @@ namespace MyMath {
 		float ra, rb;
 		float R[3][3], AbsR[3][3];
 
-		// 1. 두 박스의 축 내적 (회전행렬 R)
+		
 		for (int i = 0; i < 3; i++) {
 			for (int j = 0; j < 3; j++) {
 				R[i][j] = Dot(a.axis[i], b.axis[j]);
@@ -424,18 +424,18 @@ namespace MyMath {
 			}
 		}
 
-		// 2. 두 중심의 벡터를 A 좌표계로 변환
+		
 		Vector3 t = Subtract(b.center, a.center);
 		t = { Dot(t, a.axis[0]), Dot(t, a.axis[1]), Dot(t, a.axis[2]) };
 
-		// 3. A의 세 축에 대해 검사
+		
 		for (int i = 0; i < 3; i++) {
 			ra = a.halfSize[i];
 			rb = b.halfSize[0] * AbsR[i][0] + b.halfSize[1] * AbsR[i][1] + b.halfSize[2] * AbsR[i][2];
 			if (std::fabs(t[i]) > ra + rb) return false;
 		}
 
-		// 4. B의 세 축에 대해 검사
+		
 		for (int i = 0; i < 3; i++) {
 			ra = a.halfSize[0] * AbsR[0][i] + a.halfSize[1] * AbsR[1][i] + a.halfSize[2] * AbsR[2][i];
 			rb = b.halfSize[i];
@@ -443,7 +443,7 @@ namespace MyMath {
 			if (proj > ra + rb) return false;
 		}
 
-		// 5. 외적 축 9개 검사
+		
 		for (int i = 0; i < 3; i++) {
 			for (int j = 0; j < 3; j++) {
 				ra = a.halfSize[(i + 1) % 3] * AbsR[(i + 2) % 3][j] + a.halfSize[(i + 2) % 3] * AbsR[(i + 1) % 3][j];
@@ -453,7 +453,7 @@ namespace MyMath {
 			}
 		}
 
-		// 모든 축에서 분리가 없으면 충돌
+		
 		return true;
 	}
 
@@ -686,7 +686,7 @@ namespace MyMath {
 		outTranslation.y = m.m[3][1];
 		outTranslation.z = m.m[3][2];
 
-		// 2. scale (각 basis vector의 길이)
+		// 2. scale
 		outScale.x = sqrtf(m.m[0][0] * m.m[0][0] + m.m[0][1] * m.m[0][1] + m.m[0][2] * m.m[0][2]);
 		outScale.y = sqrtf(m.m[1][0] * m.m[1][0] + m.m[1][1] * m.m[1][1] + m.m[1][2] * m.m[1][2]);
 		outScale.z = sqrtf(m.m[2][0] * m.m[2][0] + m.m[2][1] * m.m[2][1] + m.m[2][2] * m.m[2][2]);
@@ -695,14 +695,14 @@ namespace MyMath {
 			return false;
 		}
 
-		// 3. rotation (행렬에서 스케일을 제거하고 Euler 추출)
+		// 3. rotation 
 		Matrix4x4 rotM = m;
 
 		rotM.m[0][0] /= outScale.x;  rotM.m[0][1] /= outScale.x;  rotM.m[0][2] /= outScale.x;
 		rotM.m[1][0] /= outScale.y;  rotM.m[1][1] /= outScale.y;  rotM.m[1][2] /= outScale.y;
 		rotM.m[2][0] /= outScale.z;  rotM.m[2][1] /= outScale.z;  rotM.m[2][2] /= outScale.z;
 
-		// rotation from rotation matrix (YXZ or XYZ 등 엔진 기준에 따라 수정)
+		// rotation from rotation matrix 
 		outRotationEuler.x = atan2f(rotM.m[2][1], rotM.m[2][2]);
 		outRotationEuler.y = atan2f(-rotM.m[2][0],
 			sqrtf(rotM.m[2][1] * rotM.m[2][1] + rotM.m[2][2] * rotM.m[2][2]));
