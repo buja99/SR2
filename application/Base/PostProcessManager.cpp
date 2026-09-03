@@ -3,10 +3,6 @@
 #include "DirectXCommon.h"
 #include <cassert>
 #include <d3dx12.h>
-#include <dxcapi.h>
-#include <cassert>
-
-#pragma comment(lib, "dxcompiler.lib")
 
 PostProcessManager* PostProcessManager::GetInstance() {
     static PostProcessManager instance;
@@ -14,7 +10,6 @@ PostProcessManager* PostProcessManager::GetInstance() {
 }
 
 void PostProcessManager::Initialize(ID3D12Device* device) {
-    assert(device != nullptr);
 
     if (initialized_) {
         return;
@@ -22,50 +17,7 @@ void PostProcessManager::Initialize(ID3D12Device* device) {
     initialized_ = true;
     device_ = device;
 
-    // Set Off-Screen Texture to Descriptor Table via SRV Manager (t0)
-    SrvManager::GetInstance()->PreDraw();
-    SrvManager::GetInstance()->SetGraphicsRootDesciptorTable(0, offscreenSRVIndex);
-
-    switch (currentMode_) {
-    case PostEffectMode::Grayscale:
-        DrawGrayscale(commandList);
-        break;
-    case PostEffectMode::Vignette:
-        DrawVignette(commandList);
-        break;
-    case PostEffectMode::RadialBlur:
-        DrawRadialBlur(commandList);
-        break;
-    default:
-        break;
-    }
-}
-
-
-
-// ==========================================
-// [ Grayscale ]
-// ==========================================
-
-void PostProcessManager::SetGrayscaleStrength(float strength) {
-    grayscaleSettings_.strength = strength;
-    void* mapped = nullptr;
-    if (SUCCEEDED(grayscaleConstBuffer_->Map(0, nullptr, &mapped))) {
-        memcpy(mapped, &grayscaleSettings_, sizeof(GrayscaleSettings));
-        grayscaleConstBuffer_->Unmap(0, nullptr);
-    }
-}
-
-void PostProcessManager::InitializeGrayscalePipeline(ID3D12Device* device) {
     HRESULT hr;
-    ComPtr<IDxcUtils> dxcUtils;
-    ComPtr<IDxcCompiler3> dxcCompiler;
-    hr = DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&dxcUtils));
-    assert(SUCCEEDED(hr));
-    hr = DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&dxcCompiler));
-    assert(SUCCEEDED(hr));
-    ComPtr<IDxcIncludeHandler> includeHandler;
-    dxcUtils->CreateDefaultIncludeHandler(&includeHandler);
 
     // Match the resolution size (assuming a default resolution of 1280x720)
     const UINT textureWidth = 1280;
@@ -112,12 +64,6 @@ void PostProcessManager::InitializeGrayscalePipeline(ID3D12Device* device) {
         // pingPongRTVHandles_[i] = RtvManager::GetInstance()->AllocateCpuHandle();
         // device_->CreateRenderTargetView(pingPongBuffers_[i].Get(), nullptr, pingPongRTVHandles_[i]);
     }
-
-void PostProcessManager::DrawGrayscale(ID3D12GraphicsCommandList* commandList) {
-    commandList->SetGraphicsRootSignature(grayscaleRootSignature_.Get());
-    commandList->SetPipelineState(grayscalePipelineState_.Get());
-    commandList->SetGraphicsRootConstantBufferView(1, grayscaleConstBuffer_->GetGPUVirtualAddress());
-    commandList->DrawInstanced(3, 1, 0, 0);
 }
 
 void PostProcessManager::Cleanup() {
@@ -137,7 +83,6 @@ void PostProcessManager::AddEffect(std::unique_ptr<IPostEffect> effect) {
 
 void PostProcessManager::ClearEffects() {
     effects_.clear();
-}
 }
 
 void PostProcessManager::Draw(ID3D12GraphicsCommandList* commandList, uint32_t offscreenSRVIndex) {
@@ -172,9 +117,6 @@ void PostProcessManager::Draw(ID3D12GraphicsCommandList* commandList, uint32_t o
             commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
         }
 
-    ComPtr<ID3DBlob> sigBlob, errBlob;
-    hr = D3D12SerializeRootSignature(&rsDesc, D3D_ROOT_SIGNATURE_VERSION_1, &sigBlob, &errBlob);
-    hr = device->CreateRootSignature(0, sigBlob->GetBufferPointer(), sigBlob->GetBufferSize(), IID_PPV_ARGS(&radialBlurRootSignature_));
 
         if (!isLast) {
             // Transition back to the SRV state so the next effect can read from it.
@@ -192,10 +134,4 @@ void PostProcessManager::Draw(ID3D12GraphicsCommandList* commandList, uint32_t o
             currentTargetIndex = 1 - currentTargetIndex;
         }
     }
-
-void PostProcessManager::DrawRadialBlur(ID3D12GraphicsCommandList* commandList) {
-    commandList->SetGraphicsRootSignature(radialBlurRootSignature_.Get());
-    commandList->SetPipelineState(radialBlurPipelineState_.Get());
-    commandList->SetGraphicsRootConstantBufferView(1, radialBlurConstBuffer_->GetGPUVirtualAddress());
-    commandList->DrawInstanced(3, 1, 0, 0);
 }
