@@ -3,9 +3,7 @@
 
 void FPSLimiter::InitializeFixFPS()
 {
-
 	reference_ = std::chrono::steady_clock::now();
-
 }
 
 void FPSLimiter::UpdateFixFPS()

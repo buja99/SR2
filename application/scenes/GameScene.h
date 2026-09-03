@@ -21,6 +21,7 @@
 #include "Enemy.h"
 #include "ParticleEffectLibrary.h"
 #include "Skybox.h"
+#include "Prop.h"
 
 class GameScene : public BaseScene {
 public:
@@ -58,11 +59,9 @@ private:
 
 
 	//model
-	std::unique_ptr<Object3d> test_plyer = nullptr;
-	std::unique_ptr<WorldTransform> test_plyerTransforms_;
+	std::unique_ptr<Prop> test_plyer;
 
-	std::unique_ptr<Object3d> block_ = nullptr;
-	std::unique_ptr<WorldTransform> blockTransforms_;
+	std::unique_ptr<Prop> block_;
 
 	std::unique_ptr<Ground> ground_ = nullptr;
 

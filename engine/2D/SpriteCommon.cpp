@@ -13,8 +13,8 @@ void SpriteCommon::Initialize(DirectXCommon* dxCommon)
 {
 	dxCommon_ = dxCommon;
 	CreateRootSignature();
-    CreatePipelineStateForUI();        // UI용 PSO (DepthWrite = 0)
-    CreatePipelineStateFor3DOverlay(); // 3D 위에 Sprite용 PSO (DepthWrite = 1)
+    CreatePipelineStateForUI();        
+    CreatePipelineStateFor3DOverlay(); 
 
 }
 
@@ -32,19 +32,6 @@ void SpriteCommon::Set3DOverlayPipeline() {
     cmd->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 }
 
-//void SpriteCommon::SetBackgroundView() {
-//	auto cmd = dxCommon_->GetCommandList();
-//	cmd->SetGraphicsRootSignature(rootSignature_.Get());
-//	cmd->SetPipelineState(psoBackground_.Get());
-//	cmd->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-//}
-//
-//void SpriteCommon::SetForegroundView() {
-//	auto cmd = dxCommon_->GetCommandList();
-//	cmd->SetGraphicsRootSignature(rootSignature_.Get());
-//	cmd->SetPipelineState(psoForeground_.Get());
-//	cmd->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-//}
 
 void SpriteCommon::Finalize() {
     rootSignature_.Reset();
@@ -111,7 +98,7 @@ void SpriteCommon::CreatePipelineStateForUI() {
 
     D3D12_DEPTH_STENCIL_DESC depth{};
     depth.DepthEnable = true;
-    depth.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO; // 깊이 기록 안 함
+    depth.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO; 
     depth.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
 
     auto vs = dxCommon_->CompileShader(L"Resources/shaders/Sprite.VS.hlsl", L"vs_6_0", dxcUtils.Get(), dxcCompiler.Get(), includeHandler.Get());
@@ -170,7 +157,7 @@ void SpriteCommon::CreatePipelineStateFor3DOverlay() {
 
     D3D12_DEPTH_STENCIL_DESC depth{};
     depth.DepthEnable = true;
-    depth.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL; // ✅ 깊이 기록함
+    depth.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL; 
     depth.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
 
     auto vs = dxCommon_->CompileShader(L"Resources/shaders/Sprite.VS.hlsl", L"vs_6_0", dxcUtils.Get(), dxcCompiler.Get(), includeHandler.Get());

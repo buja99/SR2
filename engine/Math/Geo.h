@@ -25,9 +25,9 @@ struct AABB {
 };
 
 struct OBB {
-	Vector3 center;       // 중심 좌표 (world)
-	Vector3 halfSize;     // 반쪽 크기
-	Vector3 axis[3];      // 로컬 축 (X,Y,Z) → world 변환된 것
+	Vector3 center;       
+	Vector3 halfSize;     
+	Vector3 axis[3];      
 };
 
 struct Quaternion {

@@ -1,4 +1,8 @@
 #include "Ground.h"
+#include "Object3dCommon.h"
+#include "ModelManager.h"
+#include "DirectXCommon.h"
+#include "Object3d.h"
 
 void Ground::Initialize() {
 

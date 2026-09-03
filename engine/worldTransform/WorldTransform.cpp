@@ -13,7 +13,7 @@ WorldTransform::~WorldTransform() {
         constBuffer_->Release();
         constBuffer_ = nullptr;
     }*/
-    // ComPtr이 자동으로 constBuffer_를 Release()함
+    
 
 }
 
@@ -56,7 +56,7 @@ void WorldTransform::SetParent(WorldTransform* parent) {
 
 void WorldTransform::Cleanup() {
     if (constBuffer_) {
-        constBuffer_.Reset();  // Release() 자동 호출
+        constBuffer_.Reset();  
     }
 }
 

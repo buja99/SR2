@@ -12,7 +12,7 @@ struct Vector3 final {
         case 0: return x;
         case 1: return y;
         case 2: return z;
-        default: return x; // 기본값 (예외 대신 첫 요소 반환)
+        default: return x; 
         }
     }
 

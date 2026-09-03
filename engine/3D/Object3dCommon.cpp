@@ -33,6 +33,7 @@ void Object3dCommon::Finalize() {
 	stencilMaskPipelineState_.Reset();
 	stencilMaskRootSignature_.Reset();
 	stencilTestPipelineState_.Reset();
+	graphicsPipelineStateAnimated_.Reset();
 	rootSignature.Reset();
 	graphicsPipelineState.Reset();
 	stencilMaskVertexBuffer_.Reset();
@@ -57,15 +58,14 @@ void Object3dCommon::CommonDrawSettings()
 void Object3dCommon::stencilMaskSettings() {
 	auto commandList = dxCommon_->GetCommandList();
 
-	// 마스크를 위한 파이프라인 상태 설정 (쓰기 모드)
 	commandList->SetGraphicsRootSignature(stencilMaskRootSignature_.Get());
 	commandList->SetPipelineState(stencilMaskPipelineState_.Get());
 	commandList->OMSetStencilRef(1);
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	// 정점 버퍼 설정 및 사각형 출력
+
 	commandList->IASetVertexBuffers(0, 1, &stencilMaskVBView_);
-	commandList->DrawInstanced(6, 1, 0, 0); // 사각형 마스크 그리기
+	commandList->DrawInstanced(6, 1, 0, 0); 
 }
 
 void Object3dCommon::SetStencilTestDrawSettings() {
@@ -106,7 +106,6 @@ void Object3dCommon::SetStencilWritePipeline() {
 	commandList->SetPipelineState(stencilMaskPipelineState_.Get());
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 }
-
 
 
 IDxcBlob* Object3dCommon::CompileShader(const std::wstring& filePath, const wchar_t* profile, IDxcUtils* dxcUtils, IDxcCompiler3* dxcCompiler, IDxcIncludeHandler* includeHandler)
@@ -182,7 +181,7 @@ void Object3dCommon::CreateRootSignature()
 	descriptionRootSignature.Flags =
 		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 	//複数設定できるので配列。今回は結果１つだけなので長さ1の配列
-	D3D12_ROOT_PARAMETER rootParameters[11] = {};
+	D3D12_ROOT_PARAMETER rootParameters[12] = {};
 	// b0: Material Constant Buffer
 	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; //CBVを使う
 	rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; //PixelShaderで使う
@@ -229,6 +228,11 @@ void Object3dCommon::CreateRootSignature()
 	rootParameters[10].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 	rootParameters[10].DescriptorTable.pDescriptorRanges = &descriptorRange[1];
 	rootParameters[10].DescriptorTable.NumDescriptorRanges = 1;
+
+	rootParameters[11].ParameterType = D3D12_ROOT_PARAMETER_TYPE_SRV;
+	rootParameters[11].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+	rootParameters[11].Descriptor.ShaderRegister = 0;
+	rootParameters[11].Descriptor.RegisterSpace = 0;
 
 	descriptionRootSignature.pParameters = rootParameters; //rootParameters配列へのポインタ
 	descriptionRootSignature.NumParameters = _countof(rootParameters); //配列の長さ
@@ -289,7 +293,9 @@ void Object3dCommon::CreateGraphicsPipeline()
 		L"ps_6_0", dxcUtils, dxcCompiler, includeHandler);
 	assert(pixelShaderBlob != nullptr);
 
-
+	ComPtr<IDxcBlob> vertexShaderAnimatedBlob = CompileShader(L"resources/shaders/Object3dAnimated.VS.hlsl",
+		L"vs_6_0", dxcUtils, dxcCompiler, includeHandler);
+	assert(vertexShaderAnimatedBlob != nullptr);
 
 
 	// InputLayout
@@ -355,12 +361,29 @@ void Object3dCommon::CreateGraphicsPipeline()
 		IID_PPV_ARGS(&graphicsPipelineState));
 	assert(SUCCEEDED(hr));
 
+	D3D12_INPUT_ELEMENT_DESC inputElementDescsAnimated[] = {
+		{ "POSITION",     0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD",     0, DXGI_FORMAT_R32G32_FLOAT,        0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "NORMAL",       0, DXGI_FORMAT_R32G32B32_FLOAT,     0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "WEIGHT",       0, DXGI_FORMAT_R32G32B32A32_FLOAT,  0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "BONE_INDICES", 0, DXGI_FORMAT_R32G32B32A32_SINT,   0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+	};
+
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDescAnimated = graphicsPipelineStateDesc;
+
+	psoDescAnimated.InputLayout.pInputElementDescs = inputElementDescsAnimated;
+	psoDescAnimated.InputLayout.NumElements = _countof(inputElementDescsAnimated);
+
+	psoDescAnimated.VS = { vertexShaderAnimatedBlob->GetBufferPointer(), vertexShaderAnimatedBlob->GetBufferSize() };
+
+	hr = device->CreateGraphicsPipelineState(&psoDescAnimated, IID_PPV_ARGS(&graphicsPipelineStateAnimated_));
+	assert(SUCCEEDED(hr));
 }
 
 void Object3dCommon::CreateStencilWritePipeline() {
 	HRESULT hr;
 
-	// DXC 컴파일러 초기화
+
 	ComPtr<IDxcUtils> dxcUtils;
 	ComPtr<IDxcCompiler3> dxcCompiler;
 	hr = DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&dxcUtils));
@@ -370,11 +393,11 @@ void Object3dCommon::CreateStencilWritePipeline() {
 	ComPtr<IDxcIncludeHandler> includeHandler;
 	dxcUtils->CreateDefaultIncludeHandler(&includeHandler);
 
-	// 간단한 사각형용 셰이더 컴파일 (Color만 출력하는 단순 셰이더)
+
 	auto vs = CompileShader(L"resources/shaders/StencilMask.VS.hlsl", L"vs_6_0", dxcUtils.Get(), dxcCompiler.Get(), includeHandler.Get());
 	auto ps = CompileShader(L"resources/shaders/StencilMask.PS.hlsl", L"ps_6_0", dxcUtils.Get(), dxcCompiler.Get(), includeHandler.Get());
 
-	// 루트 시그니처 (입력 없음)
+	
 	CD3DX12_ROOT_SIGNATURE_DESC rsDesc;
 	rsDesc.Init(0, nullptr, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
@@ -384,7 +407,7 @@ void Object3dCommon::CreateStencilWritePipeline() {
 	hr = device->CreateRootSignature(0, sigBlob->GetBufferPointer(), sigBlob->GetBufferSize(), IID_PPV_ARGS(&stencilMaskRootSignature_));
 	assert(SUCCEEDED(hr));
 
-	// PSO 설정
+	// PSO 
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc{};
 	psoDesc.pRootSignature = stencilMaskRootSignature_.Get();
 	psoDesc.VS = { vs->GetBufferPointer(), vs->GetBufferSize() };
@@ -440,7 +463,7 @@ void Object3dCommon::CreateStencilTestPipeline() {
 	hr = dxcUtils->CreateDefaultIncludeHandler(&includeHandler);
 	assert(SUCCEEDED(hr));
 
-	// Object3d용 셰이더 컴파일
+	
 	auto vs = CompileShader(L"resources/shaders/Object3D.VS.hlsl", L"vs_6_0", dxcUtils.Get(), dxcCompiler.Get(), includeHandler.Get());
 	auto ps = CompileShader(L"resources/shaders/Object3D.PS.hlsl", L"ps_6_0", dxcUtils.Get(), dxcCompiler.Get(), includeHandler.Get());
 
@@ -458,14 +481,14 @@ void Object3dCommon::CreateStencilTestPipeline() {
 	D3D12_BLEND_DESC blendDesc = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 	D3D12_RASTERIZER_DESC rasterizerDesc = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
 
-	// Depth-Stencil 설정 (💡 핵심!)
+	// Depth-Stencil )
 	D3D12_DEPTH_STENCIL_DESC dsDesc = {};
 	dsDesc.DepthEnable = TRUE;
 	dsDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
 	dsDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
 	dsDesc.StencilEnable = TRUE;
 	dsDesc.StencilReadMask = 0xFF;
-	dsDesc.StencilWriteMask = 0x00; // 쓰지 않음
+	dsDesc.StencilWriteMask = 0x00; 
 	dsDesc.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
 	dsDesc.FrontFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
 	dsDesc.FrontFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
@@ -477,7 +500,7 @@ void Object3dCommon::CreateStencilTestPipeline() {
 	dsDesc.BackFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
 	dsDesc.BackFace = dsDesc.FrontFace;
 
-	// PSO 생성
+	// PSO 
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
 	psoDesc.pRootSignature = rootSignature.Get();
 	psoDesc.InputLayout = inputLayoutDesc;

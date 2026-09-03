@@ -23,8 +23,8 @@ public:
 	}
 
 	void Initialize(DirectXCommon* dxCommon);
-	void SetUIPipeline();         // UI용 (DepthWrite 없음)
-	void Set3DOverlayPipeline();  // 3D 위에 Sprite 덮기용 (DepthWrite 있음)
+	void SetUIPipeline();         
+	void Set3DOverlayPipeline();  
 
 
 	void Finalize();
@@ -48,7 +48,7 @@ private:
 	void CreateRootSignature();
 	void CreatePipelineStateForUI();
 	void CreatePipelineStateFor3DOverlay();
-	//void CreateGraphicsPipeline(bool background);
+	
 
 	DirectXCommon* dxCommon_ = nullptr;
 	ComPtr<ID3D12RootSignature> rootSignature_;

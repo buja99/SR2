@@ -2,6 +2,15 @@
 #include "SceneManager.h"
 #include "ImGuiManager.h"
 #include "PostProcessManager.h"
+#include "GrayscaleEffect.h"
+#include "VignetteEffect.h"
+#include "LightManager.h"
+#include "DirectionalLight.h"
+#include "Object3dCommon.h"
+#include "ModelManager.h"
+#include "DirectXCommon.h"
+#include "Object3d.h"
+
 TitleScene::~TitleScene() {
 	Finalize();
 }
@@ -12,16 +21,10 @@ void TitleScene::Initialize() {
 	input_ = Input::GetInstance();
 	camera_ = std::make_unique<Camera>();
 
+	auto dxCommon = DirectXCommon::GetInstance();
 	ModelManager::GetInstance()->Initialize(DirectXCommon::GetInstance());
 
-	worldTransform_ = std::make_unique<WorldTransform>();
-	worldTransform_->Initialize();
-
-	testWorldTransform_ = std::make_unique<WorldTransform>();
-	testWorldTransform_->Initialize();
-
-	model_ = std::make_unique<Object3d>();
-	model_->Initialize(Object3dCommon::GetInstance(), worldTransform_.get());
+	
 	//Tl2 test
 	ModelManager::GetInstance()->LoadModel("resources/enemy", "enemy.obj");
 	TextureManager::GetInstance()->LoadTextureDDS("resources/player01.dds", false);
@@ -29,17 +32,17 @@ void TitleScene::Initialize() {
 
 	ModelManager::GetInstance()->LoadModel("resources/test1", "head.obj");
 	ModelManager::GetInstance()->LoadModel("resources/obj/tree", "tree.obj");
-	model_->SetModel("tree.obj");
+	model_ = std::make_unique<Prop>();
+	model_->Initialize("tree.obj");
 
-	testModel_ = std::make_unique<Object3d>();
-	testModel_->Initialize(Object3dCommon::GetInstance(), testWorldTransform_.get());
+	testModel_ = std::make_unique<Prop>();
 
 	/*ModelManager::GetInstance()->LoadModel("resources/test", "terrain.gltf");
 	ModelManager::GetInstance()->LoadModel("resources/test_player", "walk.gltf");*/
 
-	testModel_->SetModel("enemy.obj");
-	testModel_->SetUseEnvironmentMap(false);
-	testModel_->SetTextureDDS2D("resources/player01.dds");
+	testModel_->Initialize("enemy.obj");
+	/*testModel_->SetUseEnvironmentMap(false);
+	testModel_->SetTextureDDS2D("resources/player01.dds");*/
 
 	//testModel_->SetEnableLighting(true);
 	//testModel_->SetIsBlinnPhong(true);          // Phong
@@ -55,16 +58,13 @@ void TitleScene::Initialize() {
 	
 	
 	// Area Light
-	// 카메라 생성
 	camera_ = std::make_unique<Camera>();
 	camera_->SetEye({ 0.0f, 4.0f, -10.0f });
 	camera_->SetTarget({ 0.0f, 0.0f, 0.0f });
 
-	// 모델에 카메라 설정
 	model_->SetCamera(camera_.get());
 	testModel_->SetCamera(camera_.get());
 
-	// 씬 공통 렌더 설정 (이것도 보통 필요함)
 	Object3dCommon::GetInstance()->SetDefaultCamera(camera_.get());
 
 	TextureManager::GetInstance()->LoadTexture("resources/title.png");
@@ -89,7 +89,7 @@ void TitleScene::Initialize() {
 	effectLibrary_->SetUseCylinderAutoEmit(true);*/
 
 
-	PostProcessManager::GetInstance()->SetGrayscaleStrength(0.0f);
+	
 }
 
 void TitleScene::Update() {
@@ -98,8 +98,7 @@ void TitleScene::Update() {
 
 	model_->Update();
 	testModel_->Update();
-	worldTransform_->UpdateMatrix();
-	testWorldTransform_->UpdateMatrix();
+	
 	camera_->Update();
 	//effectLibrary_->Update();
 
@@ -110,7 +109,6 @@ void TitleScene::Update() {
 	Vector3 rotate = model_->GetRotate();
 	Vector3 translate = model_->GetTranslate();
 
-	// 슬라이더로 값 수정
 	ImGui::DragFloat3("Scale", &scale.x, 0.1f);
 	ImGui::DragFloat3("Rotate", &rotate.x, 0.1f);
 	ImGui::DragFloat3("Translate", &translate.x, 0.1f);
@@ -146,7 +144,7 @@ void TitleScene::Update() {
 		testModel_->SetUseAreaLight(useArea);
 	}
 
-	// Point Light 상세 조정
+	// Point Light 
 	if (usePoint) {
 		static Vector3 position = { 0.0f, 5.0f, 0.0f };
 		static float intensity = 1.0f;
@@ -158,10 +156,10 @@ void TitleScene::Update() {
 		ImGui::DragFloat("Intensity##Point", &intensity, 0.1f);
 		ImGui::DragFloat("Radius##Point", &radius, 0.1f);
 		ImGui::DragFloat("Decay##Point", &decay, 0.1f);
-		testModel_->SetPointLight(position, intensity, radius, decay);
+		
 	}
 
-	// Spot Light 상세 조정
+	// Spot Light 
 	if (useSpot) {
 		static Vector3 position = { 0.0f, 5.0f, 5.0f };
 		static Vector3 direction = { 0.0f, -1.0f, -1.0f };
@@ -179,13 +177,10 @@ void TitleScene::Update() {
 		ImGui::DragFloat("OuterCutoff##Spot", &outerCutoff, 1.0f, 0.0f, 90.0f);
 		ImGui::DragFloat("Decay##Spot", &decay, 0.1f);
 		ImGui::DragFloat("Radius##Spot", &radius, 0.1f);
-		testModel_->SetSpotLight(position, direction, intensity,
-			cosf(MyMath::ToRadian(cutoff)),
-			cosf(MyMath::ToRadian(outerCutoff)),
-			decay, radius);
+		
 	}
 
-	// Area Light 상세 조정
+	// Area Light 
 	if (useArea) {
 		static Vector3 position = { 0.0f, 5.0f, 0.0f };
 		static Vector3 right = { 1.0f, 0.0f, 0.0f };
@@ -203,7 +198,7 @@ void TitleScene::Update() {
 		ImGui::DragFloat("Half Height##Area", &halfHeight, 0.1f);
 		ImGui::ColorEdit4("Color##Area", &color.x);
 		ImGui::DragFloat("Intensity##Area", &intensity, 0.1f);
-		testModel_->SetAreaLight(position, right, halfWidth, up, halfHeight, color, intensity);
+		
 	}
 
 	ImGui::End();
@@ -217,64 +212,11 @@ void TitleScene::Update() {
 
 	ImGui::Begin("PostEffect");
 
-	// Current Integrated Mode Stored in the Manager
-	PostEffectMode currentMode = PostProcessManager::GetInstance()->GetPostEffectMode();
-
-	//  Switch Mode When Radio Button Is Selected
-	if (ImGui::RadioButton("None", currentMode == PostEffectMode::None)) {
-		PostProcessManager::GetInstance()->SetPostEffectMode(PostEffectMode::None);
-	}
-	ImGui::SameLine();
-	if (ImGui::RadioButton("Grayscale", currentMode == PostEffectMode::Grayscale)) {
-		PostProcessManager::GetInstance()->SetPostEffectMode(PostEffectMode::Grayscale);
-	}
-	ImGui::SameLine();
-	if (ImGui::RadioButton("Vignette", currentMode == PostEffectMode::Vignette)) {
-		PostProcessManager::GetInstance()->SetPostEffectMode(PostEffectMode::Vignette);
-	}
-	ImGui::SameLine();
-	if (ImGui::RadioButton("Radial Blur", currentMode == PostEffectMode::RadialBlur)) {
-		PostProcessManager::GetInstance()->SetPostEffectMode(PostEffectMode::RadialBlur);
-	}
+	
 
 	ImGui::Separator(); 
 
-	// 1) Adjust Grayscale Intensity
-	if (PostProcessManager::GetInstance()->IsGrayscaleEnabled()) {
-		float grayscaleStrength = PostProcessManager::GetInstance()->GetGrayscaleStrength();
-		if (ImGui::SliderFloat("Grayscale Strength", &grayscaleStrength, 0.0f, 1.0f)) {
-			PostProcessManager::GetInstance()->SetGrayscaleStrength(grayscaleStrength);
-		}
-	}
 
-	// 2) Adjust Vignette Intensity
-	if (PostProcessManager::GetInstance()->IsVignetteEnabled()) {
-		float vignetteStrength = PostProcessManager::GetInstance()->GetVignetteStrength();
-		if (ImGui::SliderFloat("Vignette Strength", &vignetteStrength, 0.0f, 1.0f)) {
-			PostProcessManager::GetInstance()->SetVignetteStrength(vignetteStrength);
-		}
-	}
-
-	// 3) Adjust Radial Blur Details
-	if (PostProcessManager::GetInstance()->IsRadialBlurEnabled()) {
-		int sampleCount = PostProcessManager::GetInstance()->GetRadialBlurNumSamples();
-		if (ImGui::SliderInt("Samples", &sampleCount, 2, 64)) {
-			PostProcessManager::GetInstance()->SetRadialBlurNumSamples(sampleCount);
-		}
-
-		float strength = PostProcessManager::GetInstance()->GetRadialBlurStrength();
-		if (ImGui::SliderFloat("Blur Strength", &strength, 0.0f, 1.0f)) {
-			PostProcessManager::GetInstance()->SetRadialBlurStrength(strength);
-		}
-
-		float center[2] = {
-			PostProcessManager::GetInstance()->GetRadialBlurCenterX(),
-			PostProcessManager::GetInstance()->GetRadialBlurCenterY()
-		};
-		if (ImGui::SliderFloat2("Center", center, 0.0f, 1.0f)) {
-			PostProcessManager::GetInstance()->SetRadialBlurCenter(center[0], center[1]);
-		}
-	}
 
 	ImGui::End();
 
@@ -334,17 +276,13 @@ void TitleScene::Draw() {
 
 void TitleScene::Finalize() {
 	if (model_) {
-		model_->Cleanup();
-		model_.reset();
+		model_->Finalize();
+		
 	}
 	if (testModel_) {
-		testModel_->Cleanup();
-		testModel_.reset();
+		testModel_-> Finalize();
 	}
-	if (worldTransform_) {
-		worldTransform_->Cleanup();
-		worldTransform_.reset();
-	}
+	
 	camera_.reset();
 
 	title.reset();

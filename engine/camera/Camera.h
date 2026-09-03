@@ -10,8 +10,8 @@ struct CameraForGPU {
 };
 
 enum class CameraMode {
-	Transform, // 위치+회전 기반
-	LookAt     // Eye, Target, Up 기반
+	Transform, 
+	LookAt     
 };
 
 class Camera
@@ -54,11 +54,11 @@ private:
 
 	CameraMode mode_ = CameraMode::Transform;
 
-	// transform 기반
+	// transform 
 	Transform transform_;
 	Matrix4x4 worldMatrix_;
 
-	// 공통
+	
 	Matrix4x4 viewMatrix_;
 	Matrix4x4 projectionMatrix_;
 	Matrix4x4 viewProjectionMatrix_;
@@ -68,7 +68,7 @@ private:
 	float nearZ_ = 1.0f;
 	float farZ_ = 1000.0f;
 
-	// LookAt 기반
+	// LookAt 
 	Vector3 eye_ = { 0.0f, 0.0f, -5.0f };
 	Vector3 target_ = { 0.0f, 0.0f, 0.0f };
 	Vector3 up_ = { 0.0f, 1.0f, 0.0f };

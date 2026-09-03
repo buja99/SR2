@@ -22,6 +22,8 @@ void Framework::Initialize() {
 
 	dxCommon_->Initialize(winApp_.get());
 
+	ModelManager::GetInstance()->Initialize(dxCommon_);
+
 	input_ = Input::GetInstance();
 	input_->Initialize(winApp_.get());
 

@@ -72,7 +72,7 @@
     <ClCompile Include="engine\2D\SpriteCommon.cpp">
       <Filter>engine\2D</Filter>
     </ClCompile>
-    <ClCompile Include="engine\3D\Model.cpp">
+    <ClCompile Include="engine\3D\StaticModel.cpp">
       <Filter>engine\3D</Filter>
     </ClCompile>
     <ClCompile Include="engine\3D\ModelCommon.cpp">
@@ -141,7 +141,7 @@
     <ClCompile Include="engine\spriteCamera\SpriteCamera.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="engine\gameplay\Player.cpp">
+    <ClCompile Include="engine\gameplay\player\Player.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="engine\gameplay\Ground.cpp">
@@ -162,10 +162,10 @@
     <ClCompile Include="engine\particle\ParticleEffectLibrary.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="engine\gameplay\BaseEnemy.cpp">
+    <ClCompile Include="engine\gameplay\enemy\BaseEnemy.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="engine\gameplay\Enemy.cpp">
+    <ClCompile Include="engine\gameplay\enemy\Enemy.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="engine\render\skybox\Skybox.cpp">
@@ -184,6 +184,57 @@
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="application\Base\PostProcessManager.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\render\postEffect\GrayscaleEffect.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\render\postEffect\VignetteEffect.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\render\postEffect\RadialBlurEffect.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\3D\lights\DirectionalLight.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\3D\lights\LightManager.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\3D\lights\PointLight.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\3D\lights\SpotLight.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\3D\lights\AmbientLight.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\3D\lights\AreaLight.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\3D\AnimatedModel.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\3D\Prop.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\gameplay\enemy\EnemyStateIdle.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\gameplay\enemy\EnemyStateChase.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\gameplay\enemy\EnemyStateAttack.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\gameplay\enemy\EnemyStateDead.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\gameplay\player\PlayerStateIdle.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\gameplay\player\PlayerStateMove.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>
@@ -215,7 +266,7 @@
     <ClInclude Include="engine\2D\SpriteCommon.h">
       <Filter>engine\2D</Filter>
     </ClInclude>
-    <ClInclude Include="engine\3D\Model.h">
+    <ClInclude Include="engine\3D\StaticModel.h">
       <Filter>engine\3D</Filter>
     </ClInclude>
     <ClInclude Include="engine\3D\ModelCommon.h">
@@ -308,7 +359,7 @@
     <ClInclude Include="engine\spriteCamera\SpriteCamera.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="engine\gameplay\Player.h">
+    <ClInclude Include="engine\gameplay\player\Player.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="engine\gameplay\Ground.h">
@@ -329,10 +380,10 @@
     <ClInclude Include="engine\particle\ParticleEffectLibrary.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="engine\gameplay\BaseEnemy.h">
+    <ClInclude Include="engine\gameplay\enemy\BaseEnemy.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="engine\gameplay\Enemy.h">
+    <ClInclude Include="engine\gameplay\enemy\Enemy.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="engine\render\skybox\Skybox.h">
@@ -354,6 +405,78 @@
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="application\Base\PostProcessManager.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\render\postEffect\IPostEffect.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\render\postEffect\GrayscaleEffect.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\render\postEffect\VignetteEffect.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\render\postEffect\RadialBlurEffect.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3D\lights\ILight.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3D\lights\DirectionalLight.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3D\lights\LightManager.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3D\lights\PointLight.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3D\lights\SpotLight.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3D\lights\AmbientLight.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3D\lights\AreaLight.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3D\IModel.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3D\AnimatedModel.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3D\ModelTypes.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3D\Prop.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\gameplay\IEnemyState.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\gameplay\enemy\EnemyStateIdle.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\gameplay\enemy\EnemyStateChase.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\gameplay\enemy\IEnemyState.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\gameplay\enemy\EnemyStateAttack.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\gameplay\enemy\EnemyStateDead.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\gameplay\player\IPlayerState.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\gameplay\player\PlayerStateIdle.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\gameplay\player\PlayerStateMove.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>
@@ -380,5 +503,6 @@
     <FxCompile Include="resources\shaders\Vignette.PS.hlsl" />
     <FxCompile Include="resources\shaders\Vignette.VS.hlsl" />
     <FxCompile Include="resources\shaders\RadialBlur.PS.hlsl" />
+    <FxCompile Include="resources\shaders\Object3dAnimated.VS.hlsl" />
   </ItemGroup>
 </Project>

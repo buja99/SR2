@@ -49,7 +49,6 @@ void TextureManager::LoadTexture(const std::string& filePath)
 		OutputDebugStringA("\n");
 		assert(SUCCEEDED(hr));
 	}
-	//assert(SUCCEEDED(hr));
 
 	DirectX::ScratchImage mipImages;
 	hr = DirectX::GenerateMipMaps(image.GetImages(), image.GetImageCount(), image.GetMetadata(), DirectX::TEX_FILTER_SRGB, 0, mipImages);
@@ -99,7 +98,7 @@ void TextureManager::LoadTexture(const std::string& filePath)
 void TextureManager::LoadTextureDDS(const std::string& filePath, bool isCubeMap) {
 
 	if (textureDatas.contains(filePath)) {
-		return; // 이미 로드된 경우
+		return; 
 	}
 
 	assert(srvManager_);
@@ -109,7 +108,7 @@ void TextureManager::LoadTextureDDS(const std::string& filePath, bool isCubeMap)
 	DirectX::TexMetadata metadata{};
 	DirectX::ScratchImage mipImages{};
 
-	// DDS 로드
+	// DDS 
 	HRESULT hr = DirectX::LoadFromDDSFile(
 		ConvertString(filePath).c_str(),
 		DirectX::DDS_FLAGS_NONE, &metadata, mipImages);
@@ -118,7 +117,7 @@ void TextureManager::LoadTextureDDS(const std::string& filePath, bool isCubeMap)
 		return;
 	}
 	assert(SUCCEEDED(hr));
-	// GPU 리소스 생성
+	// GPU 
 	TextureData textureData{};
 	textureData.metadata = metadata;
 	textureData.resource = TextureUploader::UploadAndWait(
@@ -127,21 +126,12 @@ void TextureManager::LoadTextureDDS(const std::string& filePath, bool isCubeMap)
 		mipImages
 	);
 
-	// SRV 할당
+	// SRV 
 	textureData.srvIndex = srvManager_->Allocate();
 	textureData.srvHandleCPU = srvManager_->GetCPUDescriptorHandle(textureData.srvIndex);
 	textureData.srvHandleGPU = srvManager_->GetGPUDescriptorHandle(textureData.srvIndex);
 
-	// SRV 생성
-	/*D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
-	srvDesc.Format = metadata.format;
-	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvDesc.ViewDimension = isCubeMap ? D3D12_SRV_DIMENSION_TEXTURECUBE
-		: D3D12_SRV_DIMENSION_TEXTURE2D;
-	srvDesc.TextureCube.MostDetailedMip = 0;
-	srvDesc.TextureCube.MipLevels = UINT(metadata.mipLevels);
-	srvDesc.TextureCube.ResourceMinLODClamp = 0.0f;*/
-
+	
 	assert(textureData.resource);
 	assert(textureData.srvHandleCPU.ptr != 0);
 
@@ -174,7 +164,7 @@ void TextureManager::Finalize()
 {
 	
 	for (auto& pair : textureDatas) {
-		pair.second.resource.Reset();  // ComPtr<ID3D12Resource> 해제
+		pair.second.resource.Reset();  
 	}
 	textureDatas.clear();
 
@@ -215,7 +205,7 @@ ComPtr<ID3D12Resource> TextureManager::CreateTextureResource(const DirectX::TexM
 
 
 uint32_t TextureManager::LoadCubemap(const std::wstring& filePath) {
-	// DDS 로드
+	// DDS 
 	DirectX::TexMetadata metadata{};
 	DirectX::ScratchImage mipImages{};
 	HRESULT hr = DirectX::LoadFromDDSFile(filePath.c_str(), DirectX::DDS_FLAGS_NONE, &metadata, mipImages);
@@ -227,14 +217,14 @@ uint32_t TextureManager::LoadCubemap(const std::wstring& filePath) {
 		OutputDebugStringA(msg.c_str());
 	}
 
-	// GPU 업로드
+	// GPU 
 	ComPtr<ID3D12Resource> cubemap = TextureUploader::UploadAndWait(
 		dxCommon_->GetDevice().Get(),
 		dxCommon_->GetCommandQueue().Get(),
 		mipImages
 	);
 
-	// SRV 생성
+	// SRV 
 	uint32_t index = srvManager_->Allocate();
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
 	srvDesc.Format = metadata.format;
@@ -257,7 +247,7 @@ uint32_t TextureManager::LoadCubemap(const std::wstring& filePath) {
 	std::string key = StringUtility::ConvertString(filePath);
 	textureDatas[key] = std::move(textureData);
 
-	// === 디버그 출력 추가 ===
+	// Debug output
 	std::string msg2 = "[TextureManager] Registered cubemap: " + key +
 		" (srvIndex=" + std::to_string(index) + ")\n";
 	OutputDebugStringA(msg2.c_str());

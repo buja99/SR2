@@ -2,8 +2,9 @@
 
 #include <d3d12.h>
 #include <wrl.h>
-#include "PostEffect.h"
-#include <cstdint>
+#include <vector>
+#include <memory>
+#include "IPostEffect.h"
 
 using Microsoft::WRL::ComPtr;
 
@@ -11,42 +12,29 @@ class PostProcessManager {
 
 public:
 
-	static PostProcessManager* GetInstance();
-	void Initialize(ID3D12Device* device);
-	void Cleanup();
+    static PostProcessManager* GetInstance();
 
-	void Draw(ID3D12GraphicsCommandList* commandList, uint32_t offscreenSRVIndex);
+    void Initialize(ID3D12Device* device);
+    void Cleanup();
+
+   
+    void Draw(ID3D12GraphicsCommandList* commandList, uint32_t offscreenSRVIndex);
 
 	// ==========================================
 	// [ External Control Interface (for Scene / ImGui) ]
 	// ==========================================
 
-	void SetPostEffectMode(PostEffectMode mode) { currentMode_ = mode; }
-	PostEffectMode GetPostEffectMode() const { return currentMode_; }
+    void AddEffect(std::unique_ptr<IPostEffect> effect);
+    void ClearEffects();
+    bool HasAnyEffects() const { return !effects_.empty(); }
 
-	// --- Grayscale ---
-	void SetGrayscaleStrength(float strength);
-	float GetGrayscaleStrength() const { return grayscaleSettings_.strength; }
-
-	// --- Vignette ---
-	void SetVignetteStrength(float strength);
-	float GetVignetteStrength() const { return vignetteSettings_.vignetteStrength; }
-
-	// --- Radial Blur ---
-	void SetRadialBlurStrength(float strength);
-	float GetRadialBlurStrength() const { return radialBlurSettings_.blurStrength; }
-
-	void SetRadialBlurNumSamples(int samples);
-	int GetRadialBlurNumSamples() const { return radialBlurSettings_.numSamples; }
-
-	void SetRadialBlurCenter(float x, float y);
-	float GetRadialBlurCenterX() const { return radialBlurSettings_.centerX; }
-	float GetRadialBlurCenterY() const { return radialBlurSettings_.centerY; }
-
-	// Helper Function for Checking Feature Enablement
-	bool IsGrayscaleEnabled() const { return currentMode_ == PostEffectMode::Grayscale; }
-	bool IsVignetteEnabled() const { return currentMode_ == PostEffectMode::Vignette; }
-	bool IsRadialBlurEnabled() const { return currentMode_ == PostEffectMode::RadialBlur; }
+    template<typename T>
+    T* GetEffect(size_t index) {
+        if (index < effects_.size()) {
+            return dynamic_cast<T*>(effects_[index].get());
+        }
+        return nullptr;
+    }
 
 private:
 
@@ -56,39 +44,18 @@ private:
     PostProcessManager(const PostProcessManager&) = delete;
     PostProcessManager& operator=(const PostProcessManager&) = delete;
 
-    // Internal Initialization Helper Function (Creates Pipelines for Each Effect)
-    void InitializeGrayscalePipeline(ID3D12Device* device);
-    void InitializeVignettePipeline(ID3D12Device* device);
-    void InitializeRadialBlurPipeline(ID3D12Device* device);
+    ID3D12Device* device_ = nullptr;
+    std::vector<std::unique_ptr<IPostEffect>> effects_;
 
-    // Internal Drawing Helper Function
-    void DrawGrayscale(ID3D12GraphicsCommandList* commandList);
-    void DrawVignette(ID3D12GraphicsCommandList* commandList);
-    void DrawRadialBlur(ID3D12GraphicsCommandList* commandList);
+    static constexpr int kNumPingPongBuffers = 2;
+    ComPtr<ID3D12Resource> pingPongBuffers_[kNumPingPongBuffers];
 
-private:
-    PostEffectMode currentMode_ = PostEffectMode::None;
+    // Store the SRV handle and index allocated by SrvManager for shader input.
+    D3D12_GPU_DESCRIPTOR_HANDLE pingPongSRVHandles_[kNumPingPongBuffers];
 
-    // ==========================================
-    // [ Resource and Configuration Data ]
-    // ==========================================
+    // Store the RTV handles for the render targets (views for each temporary rendering buffer).
+    D3D12_CPU_DESCRIPTOR_HANDLE pingPongRTVHandles_[kNumPingPongBuffers];
 
-    // Grayscale
-    ComPtr<ID3D12RootSignature> grayscaleRootSignature_;
-    ComPtr<ID3D12PipelineState> grayscalePipelineState_;
-    ComPtr<ID3D12Resource> grayscaleConstBuffer_;
-    GrayscaleSettings grayscaleSettings_ = { 1.0f };
-
-    // Vignette
-    ComPtr<ID3D12RootSignature> vignetteRootSignature_;
-    ComPtr<ID3D12PipelineState> vignettePipelineState_;
-    ComPtr<ID3D12Resource> vignetteConstBuffer_;
-    VignetteSettings vignetteSettings_ = { 1.0f };
-
-    // Radial Blur
-    ComPtr<ID3D12RootSignature> radialBlurRootSignature_;
-    ComPtr<ID3D12PipelineState> radialBlurPipelineState_;
-    ComPtr<ID3D12Resource> radialBlurConstBuffer_;
-    RadialBlurSettings radialBlurSettings_{};
+    bool initialized_ = false;
 };
 

@@ -1,6 +1,8 @@
 #pragma once
-#include "DirectXCommon.h"
 #include <memory>
+
+class DirectXCommon;
+
 class ModelCommon
 {
 
@@ -16,7 +18,7 @@ public:
 
 private:
 		
-		DirectXCommon* dxCommon_;
+	DirectXCommon* dxCommon_ = nullptr;
 
 };
 

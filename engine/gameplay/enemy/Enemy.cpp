@@ -1,5 +1,10 @@
 #include "Enemy.h"
 #include "ImGuiManager.h"
+#include "Object3dCommon.h"
+#include "ModelManager.h"
+#include "DirectXCommon.h"
+#include "Object3d.h"
+#include "EnemyStateIdle.h"
 Enemy::Enemy() {
 }
 void Enemy::Initialize() {
@@ -17,32 +22,15 @@ void Enemy::Initialize() {
 	enemyWorldTransform_->translate_ = { 0.0f,5.0f,0.0f };
 	//enemyWorldTransform_->scale_ = { 12.0f, 3.0f, 3.0f };
     isHit_ = false;
+	ChangeState(std::make_unique<EnemyStateIdle>());
 }
 
 void Enemy::Update() {
 
 
-	Input* input = Input::GetInstance();
-	Vector3 move = { 0.0f, 0.0f, 0.0f };
-	float speed = 0.5f;
-	if (input->PushKey(DIK_LEFT)) {
-		move.x -= 1.0f;
-	}
-	if (input->PushKey(DIK_RIGHT)) {
-		move.x += 1.0f;
-	}
-	if (input->PushKey(DIK_UP)) {
-		move.z += 1.0f;
-	}
-	if (input->PushKey(DIK_DOWN)) {
-		move.z -= 1.0f;
-	}
-	if (move.x != 0.0f || move.z != 0.0f) {
-		move = MyMath::normalize(move);  // ← Vector3에 Normalize 함수가 있어야 함
-		move = MyMath::Multiply(move, speed);
-	}
-
-	enemyWorldTransform_->translate_ = MyMath::Add(enemyWorldTransform_->translate_, move);
+    if (currentState_) {
+        currentState_->Update(this);
+    }
 
 	enemyWorldTransform_->UpdateMatrix();
     enemyWorldTransform_->TransferMatrix();
@@ -55,7 +43,7 @@ void Enemy::Draw() {
 }
 
 int Enemy::GetType() const {
-    return 0; // 예: 기본 enemy type
+    return 0; 
 }
 
 void Enemy::OnHit(float damage) {
@@ -70,7 +58,7 @@ void Enemy::OnHit(float damage) {
     Vector3 pos = enemyWorldTransform_->translate_;
     //pos.y += 2.0f;
    
-     // 또는: effectLibrary_->EmitHitEffect(pos, ...);
+     // effectLibrary_->EmitHitEffect(pos, ...);
      isHit_ = true;
 }
 void Enemy::SetCamera(Camera* camera) {
@@ -79,6 +67,16 @@ void Enemy::SetCamera(Camera* camera) {
 }
 WorldTransform& Enemy::GetWorldTransform() {
 	return *enemyWorldTransform_;
+}
+
+void Enemy::ChangeState(std::unique_ptr<IEnemyState> newState) {
+    if (currentState_) {
+        currentState_->Exit(this); // Exit the current state
+    }
+    currentState_ = std::move(newState); // Switch to the new state
+    if (currentState_) {
+        currentState_->Enter(this); // Enter the new state
+    }
 }
 
 

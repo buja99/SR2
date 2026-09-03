@@ -1,6 +1,7 @@
 #include "PostProcessManager.h"
-#include "DirectXCommon.h" 
 #include "SrvManager.h"
+#include "DirectXCommon.h"
+#include <cassert>
 #include <d3dx12.h>
 #include <dxcapi.h>
 #include <cassert>
@@ -15,29 +16,11 @@ PostProcessManager* PostProcessManager::GetInstance() {
 void PostProcessManager::Initialize(ID3D12Device* device) {
     assert(device != nullptr);
 
-    InitializeGrayscalePipeline(device);
-    InitializeVignettePipeline(device);
-    InitializeRadialBlurPipeline(device);
-}
-
-void PostProcessManager::Cleanup() {
-    grayscaleRootSignature_.Reset();
-    grayscalePipelineState_.Reset();
-    grayscaleConstBuffer_.Reset();
-
-    vignetteRootSignature_.Reset();
-    vignettePipelineState_.Reset();
-    vignetteConstBuffer_.Reset();
-
-    radialBlurRootSignature_.Reset();
-    radialBlurPipelineState_.Reset();
-    radialBlurConstBuffer_.Reset();
-}
-
-void PostProcessManager::Draw(ID3D12GraphicsCommandList* commandList, uint32_t offscreenSRVIndex) {
-    if (currentMode_ == PostEffectMode::None) {
+    if (initialized_) {
         return;
     }
+    initialized_ = true;
+    device_ = device;
 
     // Set Off-Screen Texture to Descriptor Table via SRV Manager (t0)
     SrvManager::GetInstance()->PreDraw();
@@ -84,53 +67,51 @@ void PostProcessManager::InitializeGrayscalePipeline(ID3D12Device* device) {
     ComPtr<IDxcIncludeHandler> includeHandler;
     dxcUtils->CreateDefaultIncludeHandler(&includeHandler);
 
-    auto vs = DirectXCommon::GetInstance()->CompileShader(L"Resources/shaders/Grayscale.VS.hlsl", L"vs_6_0", dxcUtils.Get(), dxcCompiler.Get(), includeHandler.Get());
-    auto ps = DirectXCommon::GetInstance()->CompileShader(L"Resources/shaders/Grayscale.PS.hlsl", L"ps_6_0", dxcUtils.Get(), dxcCompiler.Get(), includeHandler.Get());
+    // Match the resolution size (assuming a default resolution of 1280x720)
+    const UINT textureWidth = 1280;
+    const UINT textureHeight = 720;
 
-    CD3DX12_DESCRIPTOR_RANGE range;
-    range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0); // t0
+    // 1. Configure the texture resource description with the render target flag
+    D3D12_RESOURCE_DESC resDesc = CD3DX12_RESOURCE_DESC::Tex2D(
+        DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,
+        textureWidth, textureHeight,
+        1, 1, 1, 0,
+        D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET
+    );
 
-    CD3DX12_ROOT_PARAMETER params[2];
-    params[0].InitAsDescriptorTable(1, &range, D3D12_SHADER_VISIBILITY_PIXEL);
-    params[1].InitAsConstantBufferView(0); // b0
+    D3D12_HEAP_PROPERTIES heapProps = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
 
-    CD3DX12_STATIC_SAMPLER_DESC sampler(0, D3D12_FILTER_MIN_MAG_MIP_LINEAR);
+    D3D12_CLEAR_VALUE clearValue{};
+    clearValue.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+    clearValue.Color[0] = 0.0f; clearValue.Color[1] = 0.0f; clearValue.Color[2] = 0.0f; clearValue.Color[3] = 1.0f;
 
-    CD3DX12_ROOT_SIGNATURE_DESC rsDesc;
-    rsDesc.Init(_countof(params), params, 1, &sampler, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+    for (int i = 0; i < kNumPingPongBuffers; ++i) {
+        // 2. Create the ping-pong buffer texture resources
+        hr = device_->CreateCommittedResource(
+            &heapProps, D3D12_HEAP_FLAG_NONE, &resDesc,
+            D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, &clearValue,
+            IID_PPV_ARGS(&pingPongBuffers_[i])
+        );
+        assert(SUCCEEDED(hr));
 
-    ComPtr<ID3DBlob> sigBlob, errBlob;
-    hr = D3D12SerializeRootSignature(&rsDesc, D3D_ROOT_SIGNATURE_VERSION_1, &sigBlob, &errBlob);
-    assert(SUCCEEDED(hr));
-    hr = device->CreateRootSignature(0, sigBlob->GetBufferPointer(), sigBlob->GetBufferSize(), IID_PPV_ARGS(&grayscaleRootSignature_));
-    assert(SUCCEEDED(hr));
+        // 3. Allocate and create SRVs using the SrvManager
+        // Get an available SRV index using SrvManager::Allocate().
+        uint32_t srvIndex = SrvManager::GetInstance()->Allocate();
 
-    D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc{};
-    psoDesc.pRootSignature = grayscaleRootSignature_.Get();
-    psoDesc.VS = { vs->GetBufferPointer(), vs->GetBufferSize() };
-    psoDesc.PS = { ps->GetBufferPointer(), ps->GetBufferSize() };
-    psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-    psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-    psoDesc.DepthStencilState.DepthEnable = FALSE;
-    psoDesc.DepthStencilState.StencilEnable = FALSE;
-    psoDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
-    psoDesc.InputLayout = { nullptr, 0 };
-    psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-    psoDesc.NumRenderTargets = 1;
-    psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-    psoDesc.SampleDesc.Count = 1;
+        // Call the Texture2D SRV creation function provided by SrvManager.
+        SrvManager::GetInstance()->CreatSRVforTexture2D(
+            srvIndex,
+            pingPongBuffers_[i].Get(),
+            DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,
+            1
+        );
 
-    hr = device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&grayscalePipelineState_));
-    assert(SUCCEEDED(hr));
+        // Get the GPU handle from the allocated index and store it in the member variable.
+        pingPongSRVHandles_[i] = SrvManager::GetInstance()->GetGPUDescriptorHandle(srvIndex);
 
-    D3D12_HEAP_PROPERTIES heapProps = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
-    D3D12_RESOURCE_DESC resDesc = CD3DX12_RESOURCE_DESC::Buffer((sizeof(GrayscaleSettings) + 255) & ~255);
-
-    hr = device->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &resDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&grayscaleConstBuffer_));
-    assert(SUCCEEDED(hr));
-
-    SetGrayscaleStrength(1.0f);
-}
+        // pingPongRTVHandles_[i] = RtvManager::GetInstance()->AllocateCpuHandle();
+        // device_->CreateRenderTargetView(pingPongBuffers_[i].Get(), nullptr, pingPongRTVHandles_[i]);
+    }
 
 void PostProcessManager::DrawGrayscale(ID3D12GraphicsCommandList* commandList) {
     commandList->SetGraphicsRootSignature(grayscaleRootSignature_.Get());
@@ -139,156 +120,78 @@ void PostProcessManager::DrawGrayscale(ID3D12GraphicsCommandList* commandList) {
     commandList->DrawInstanced(3, 1, 0, 0);
 }
 
-// ==========================================
-// [ Vignette ]
-// ==========================================
-
-void PostProcessManager::SetVignetteStrength(float strength) {
-    vignetteSettings_.vignetteStrength = strength;
-    void* mapped = nullptr;
-    if (SUCCEEDED(vignetteConstBuffer_->Map(0, nullptr, &mapped))) {
-        memcpy(mapped, &vignetteSettings_, sizeof(VignetteSettings));
-        vignetteConstBuffer_->Unmap(0, nullptr);
+void PostProcessManager::Cleanup() {
+    effects_.clear();
+    for (int i = 0; i < kNumPingPongBuffers; ++i) {
+        pingPongBuffers_[i].Reset();
     }
+    initialized_ = false;
 }
 
-void PostProcessManager::InitializeVignettePipeline(ID3D12Device* device) {
-    HRESULT hr;
-    ComPtr<IDxcUtils> dxcUtils;
-    ComPtr<IDxcCompiler3> dxcCompiler;
-    hr = DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&dxcUtils));
-    hr = DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&dxcCompiler));
-    ComPtr<IDxcIncludeHandler> includeHandler;
-    dxcUtils->CreateDefaultIncludeHandler(&includeHandler);
-
-    auto vs = DirectXCommon::GetInstance()->CompileShader(L"Resources/shaders/Vignette.VS.hlsl", L"vs_6_0", dxcUtils.Get(), dxcCompiler.Get(), includeHandler.Get());
-    auto ps = DirectXCommon::GetInstance()->CompileShader(L"Resources/shaders/Vignette.PS.hlsl", L"ps_6_0", dxcUtils.Get(), dxcCompiler.Get(), includeHandler.Get());
-
-    CD3DX12_DESCRIPTOR_RANGE range;
-    range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
-
-    CD3DX12_ROOT_PARAMETER params[2];
-    params[0].InitAsDescriptorTable(1, &range, D3D12_SHADER_VISIBILITY_PIXEL);
-    params[1].InitAsConstantBufferView(0);
-
-    CD3DX12_STATIC_SAMPLER_DESC sampler(0, D3D12_FILTER_MIN_MAG_MIP_LINEAR);
-
-    CD3DX12_ROOT_SIGNATURE_DESC rsDesc;
-    rsDesc.Init(_countof(params), params, 1, &sampler, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
-
-    ComPtr<ID3DBlob> sigBlob, errBlob;
-    hr = D3D12SerializeRootSignature(&rsDesc, D3D_ROOT_SIGNATURE_VERSION_1, &sigBlob, &errBlob);
-    hr = device->CreateRootSignature(0, sigBlob->GetBufferPointer(), sigBlob->GetBufferSize(), IID_PPV_ARGS(&vignetteRootSignature_));
-
-    D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc{};
-    psoDesc.pRootSignature = vignetteRootSignature_.Get();
-    psoDesc.VS = { vs->GetBufferPointer(), vs->GetBufferSize() };
-    psoDesc.PS = { ps->GetBufferPointer(), ps->GetBufferSize() };
-    psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-    psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-    psoDesc.DepthStencilState.DepthEnable = FALSE;
-    psoDesc.DepthStencilState.StencilEnable = FALSE;
-    psoDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
-    psoDesc.InputLayout = { nullptr, 0 };
-    psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-    psoDesc.NumRenderTargets = 1;
-    psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-    psoDesc.SampleDesc.Count = 1;
-
-    hr = device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&vignettePipelineState_));
-
-    D3D12_HEAP_PROPERTIES heapProps = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
-    D3D12_RESOURCE_DESC resDesc = CD3DX12_RESOURCE_DESC::Buffer((sizeof(VignetteSettings) + 255) & ~255);
-
-    hr = device->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &resDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&vignetteConstBuffer_));
-
-    SetVignetteStrength(1.0f);
-}
-
-void PostProcessManager::DrawVignette(ID3D12GraphicsCommandList* commandList) {
-    commandList->SetGraphicsRootSignature(vignetteRootSignature_.Get());
-    commandList->SetPipelineState(vignettePipelineState_.Get());
-    commandList->SetGraphicsRootConstantBufferView(1, vignetteConstBuffer_->GetGPUVirtualAddress());
-    commandList->DrawInstanced(3, 1, 0, 0);
-}
-
-// ==========================================
-// [ Radial Blur ]
-// ==========================================
-
-void PostProcessManager::SetRadialBlurStrength(float strength) {
-    radialBlurSettings_.blurStrength = strength;
-    void* mapped = nullptr;
-    if (SUCCEEDED(radialBlurConstBuffer_->Map(0, nullptr, &mapped))) {
-        memcpy(mapped, &radialBlurSettings_, sizeof(RadialBlurSettings));
-        radialBlurConstBuffer_->Unmap(0, nullptr);
+void PostProcessManager::AddEffect(std::unique_ptr<IPostEffect> effect) {
+    if (device_ && effect) {
+        effect->Initialize(device_);
     }
+    effects_.push_back(std::move(effect));
 }
 
-void PostProcessManager::SetRadialBlurNumSamples(int samples) {
-    radialBlurSettings_.numSamples = samples;
-    SetRadialBlurStrength(radialBlurSettings_.blurStrength); // Update buffer
+void PostProcessManager::ClearEffects() {
+    effects_.clear();
+}
 }
 
-void PostProcessManager::SetRadialBlurCenter(float x, float y) {
-    radialBlurSettings_.centerX = x;
-    radialBlurSettings_.centerY = y;
-    SetRadialBlurStrength(radialBlurSettings_.blurStrength); // Update buffer
-}
+void PostProcessManager::Draw(ID3D12GraphicsCommandList* commandList, uint32_t offscreenSRVIndex) {
+    if (effects_.empty()) return;
 
-void PostProcessManager::InitializeRadialBlurPipeline(ID3D12Device* device) {
-    HRESULT hr;
-    ComPtr<IDxcUtils> dxcUtils;
-    ComPtr<IDxcCompiler3> dxcCompiler;
-    hr = DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&dxcUtils));
-    hr = DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&dxcCompiler));
-    ComPtr<IDxcIncludeHandler> includeHandler;
-    dxcUtils->CreateDefaultIncludeHandler(&includeHandler);
+    SrvManager::GetInstance()->PreDraw();
 
-    auto vs = DirectXCommon::GetInstance()->CompileShader(L"Resources/shaders/CopyImage.VS.hlsl", L"vs_6_0", dxcUtils.Get(), dxcCompiler.Get(), includeHandler.Get());
-    auto ps = DirectXCommon::GetInstance()->CompileShader(L"Resources/shaders/RadialBlur.PS.hlsl", L"ps_6_0", dxcUtils.Get(), dxcCompiler.Get(), includeHandler.Get());
+    // Call the actual GetGPUDescriptorHandle function instead of GetGPUHandle.
+    D3D12_GPU_DESCRIPTOR_HANDLE currentInputSRV = SrvManager::GetInstance()->GetGPUDescriptorHandle(offscreenSRVIndex);
 
-    CD3DX12_DESCRIPTOR_RANGE range;
-    range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+    int currentTargetIndex = 0;
 
-    CD3DX12_ROOT_PARAMETER params[2];
-    params[0].InitAsDescriptorTable(1, &range, D3D12_SHADER_VISIBILITY_PIXEL);
-    params[1].InitAsConstantBufferView(0);
+    for (size_t i = 0; i < effects_.size(); ++i) {
+        auto& effect = effects_[i];
+        bool isLast = (i == effects_.size() - 1);
 
-    CD3DX12_STATIC_SAMPLER_DESC sampler(0, D3D12_FILTER_MIN_MAG_MIP_LINEAR);
+        if (isLast) {
+            DirectXCommon::GetInstance()->SetBackBufferAsRenderTarget();
+        } else {
+            // For intermediate effects, transition the temporary ping-pong buffer to the render target state and set it as the render target.
+            D3D12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+                pingPongBuffers_[currentTargetIndex].Get(),
+                D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+                D3D12_RESOURCE_STATE_RENDER_TARGET
+            );
+            commandList->ResourceBarrier(1, &barrier);
 
-    CD3DX12_ROOT_SIGNATURE_DESC rsDesc;
-    rsDesc.Init(_countof(params), params, 1, &sampler, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+            D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = pingPongRTVHandles_[currentTargetIndex];
+            commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
+
+            FLOAT clearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+            commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+        }
 
     ComPtr<ID3DBlob> sigBlob, errBlob;
     hr = D3D12SerializeRootSignature(&rsDesc, D3D_ROOT_SIGNATURE_VERSION_1, &sigBlob, &errBlob);
     hr = device->CreateRootSignature(0, sigBlob->GetBufferPointer(), sigBlob->GetBufferSize(), IID_PPV_ARGS(&radialBlurRootSignature_));
 
-    D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc{};
-    psoDesc.pRootSignature = radialBlurRootSignature_.Get();
-    psoDesc.VS = { vs->GetBufferPointer(), vs->GetBufferSize() };
-    psoDesc.PS = { ps->GetBufferPointer(), ps->GetBufferSize() };
-    psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-    psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-    psoDesc.DepthStencilState.DepthEnable = FALSE;
-    psoDesc.DepthStencilState.StencilEnable = FALSE;
-    psoDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
-    psoDesc.InputLayout = { nullptr, 0 };
-    psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-    psoDesc.NumRenderTargets = 1;
-    psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-    psoDesc.SampleDesc.Count = 1;
-    hr = device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&radialBlurPipelineState_));
+        if (!isLast) {
+            // Transition back to the SRV state so the next effect can read from it.
+            D3D12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+                pingPongBuffers_[currentTargetIndex].Get(),
+                D3D12_RESOURCE_STATE_RENDER_TARGET,
+                D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
+            );
+            commandList->ResourceBarrier(1, &barrier);
 
-    D3D12_HEAP_PROPERTIES heapProps = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
-    D3D12_RESOURCE_DESC resDesc = CD3DX12_RESOURCE_DESC::Buffer((sizeof(RadialBlurSettings) + 255) & ~255);
-    hr = device->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &resDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&radialBlurConstBuffer_));
+            // Set the input handle to the SRV handle of the texture just rendered.
+            currentInputSRV = pingPongSRVHandles_[currentTargetIndex];
 
-    radialBlurSettings_.centerX = 0.5f;
-    radialBlurSettings_.centerY = 0.5f;
-    radialBlurSettings_.numSamples = 8;
-    SetRadialBlurStrength(0.5f);
-}
+            // Toggle the ping-pong buffer alternately: 0 -> 1 -> 0 -> 1.
+            currentTargetIndex = 1 - currentTargetIndex;
+        }
+    }
 
 void PostProcessManager::DrawRadialBlur(ID3D12GraphicsCommandList* commandList) {
     commandList->SetGraphicsRootSignature(radialBlurRootSignature_.Get());

@@ -10,7 +10,7 @@ ComPtr<ID3D12Resource> TextureUploader::UploadTexture(
 ) {
     const DirectX::TexMetadata& metadata = mipImages.GetMetadata();
 
-    // GPU에 Texture 리소스 생성 (HEAP_TYPE_DEFAULT)
+   
     D3D12_RESOURCE_DESC texDesc = {};
     texDesc.Width = static_cast<UINT>(metadata.width);
     texDesc.Height = static_cast<UINT>(metadata.height);
@@ -28,7 +28,7 @@ ComPtr<ID3D12Resource> TextureUploader::UploadTexture(
         &heapProps,
         D3D12_HEAP_FLAG_NONE,
         &texDesc,
-        D3D12_RESOURCE_STATE_COPY_DEST,  // 복사용 상태로 시작
+        D3D12_RESOURCE_STATE_COPY_DEST, 
         nullptr,
         IID_PPV_ARGS(&texture)
     );
@@ -36,10 +36,10 @@ ComPtr<ID3D12Resource> TextureUploader::UploadTexture(
 
     UINT subresourceCount = UINT(mipImages.GetImageCount());
 
-    // Upload용 중간 리소스 크기 계산
+
     UINT64 uploadBufferSize = GetRequiredIntermediateSize(texture.Get(), 0, subresourceCount);
 
-    // Upload Heap에 중간 버퍼 생성
+
     D3D12_RESOURCE_DESC uploadDesc = CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize);
     D3D12_HEAP_PROPERTIES uploadProps = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
 
@@ -53,7 +53,7 @@ ComPtr<ID3D12Resource> TextureUploader::UploadTexture(
     );
     assert(SUCCEEDED(hr));
 
-    // Subresource 데이터 준비
+
     std::vector<D3D12_SUBRESOURCE_DATA> subresources;
     HRESULT result = DirectX::PrepareUpload(
         device.Get(),
@@ -65,12 +65,12 @@ ComPtr<ID3D12Resource> TextureUploader::UploadTexture(
 
     if (FAILED(result)) {
         OutputDebugStringA(" PrepareUpload failed!\n");
-        return nullptr; // 또는 적절한 에러 처리
+        return nullptr; 
     } else {
         OutputDebugStringA(" PrepareUpload succeeded.\n");
     }
 
-    // 커맨드 리스트에 복사 명령
+
     UpdateSubresources(
         commandList,
         texture.Get(),
@@ -80,7 +80,7 @@ ComPtr<ID3D12Resource> TextureUploader::UploadTexture(
         subresources.data()
     );
 
-    // 상태 전이: COPY_DEST → GENERIC_READ
+
     auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
         texture.Get(),
         D3D12_RESOURCE_STATE_COPY_DEST,
@@ -98,7 +98,7 @@ UploadResult TextureUploader::UploadAndDescribe(ID3D12Device* device, ID3D12Grap
     result.format = metadata.format;
     result.isCubemap = metadata.IsCubemap();
 
-    // ───── GPU 텍스처 리소스 생성 ─────
+
     D3D12_RESOURCE_DESC texDesc = {};
     texDesc.Width = static_cast<UINT>(metadata.width);
     texDesc.Height = static_cast<UINT>(metadata.height);
@@ -121,7 +121,7 @@ UploadResult TextureUploader::UploadAndDescribe(ID3D12Device* device, ID3D12Grap
     );
     assert(SUCCEEDED(hr));
 
-    // ───── 중간 버퍼 생성 ─────
+
     UINT64 uploadSize = GetRequiredIntermediateSize(result.texture.Get(), 0, static_cast<UINT>(metadata.mipLevels));
 
     D3D12_RESOURCE_DESC uploadDesc = CD3DX12_RESOURCE_DESC::Buffer(uploadSize);
@@ -137,7 +137,7 @@ UploadResult TextureUploader::UploadAndDescribe(ID3D12Device* device, ID3D12Grap
     );
     assert(SUCCEEDED(hr));
 
-    // ───── Subresource 복사 ─────
+
     std::vector<D3D12_SUBRESOURCE_DATA> subresources;
     DirectX::PrepareUpload(device, mipImages.GetImages(), mipImages.GetImageCount(), metadata, subresources);
 
@@ -150,7 +150,7 @@ UploadResult TextureUploader::UploadAndDescribe(ID3D12Device* device, ID3D12Grap
         subresources.data()
     );
 
-    // ───── 상태 전이 ─────
+
     auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
         result.texture.Get(),
         D3D12_RESOURCE_STATE_COPY_DEST,
@@ -158,7 +158,6 @@ UploadResult TextureUploader::UploadAndDescribe(ID3D12Device* device, ID3D12Grap
     );
     commandList->ResourceBarrier(1, &barrier);
 
-    // ───── SRV DESC 생성 ─────
     D3D12_SHADER_RESOURCE_VIEW_DESC& desc = result.srvDesc;
     desc.Format = metadata.format;
     desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
@@ -200,16 +199,15 @@ ComPtr<ID3D12Resource> TextureUploader::UploadAndWait(ComPtr<ID3D12Device> devic
         IID_PPV_ARGS(&commandList));
     assert(SUCCEEDED(hr));
 
-    // 중간 버퍼
+
     ComPtr<ID3D12Resource> intermediate;
 
-    // 실제 업로드
+
     ComPtr<ID3D12Resource> texture = UploadTexture(device, commandList.Get(), mipImages, intermediate);
 
     hr = commandList->Close();
     assert(SUCCEEDED(hr));
 
-    // 실행 및 대기
     ID3D12CommandList* lists[] = { commandList.Get() };
     commandQueue->ExecuteCommandLists(1, lists);
 

@@ -7,7 +7,7 @@ void ParticleEffectLibrary::Initialize(DirectXCommon* dxCommon, SrvManager* srvM
     primitive_->Initialize(dxCommon, srvManager);
     primitive_->SetCamera(camera);
     primitive_->SetUseBillboard(false);
-	primitive_->SetUseCylinderMesh(false); // 부드러운 원형 표현
+	primitive_->SetUseCylinderMesh(false); 
     primitive_->SetUseRingMesh(false);
     primitive_->CreateParticleGroup("primitive", "resources/circle.png");
 
@@ -35,7 +35,7 @@ void ParticleEffectLibrary::Initialize(DirectXCommon* dxCommon, SrvManager* srvM
     ring_->Initialize(dxCommon, srvManager);
     ring_->SetCamera(camera);
     ring_->SetUseBillboard(false);
-	ring_->SetUseCylinderMesh(false); // 부드러운 원형 표현
+	ring_->SetUseCylinderMesh(false); 
     ring_->SetUseRingMesh(true);
     ring_->CreateParticleGroup("ring", "resources/gradationLine.png");
 
@@ -67,7 +67,7 @@ void ParticleEffectLibrary::Initialize(DirectXCommon* dxCommon, SrvManager* srvM
     cylinder_->SetCamera(camera);
     cylinder_->SetUseBillboard(true);
 	cylinder_->SetUseCylinderMesh(true);
-    cylinder_->SetUseRingMesh(false); // 부드러운 원형 표현
+    cylinder_->SetUseRingMesh(false); 
     cylinder_->CreateParticleGroup("cylinder", "resources/gradationLine.png");
 
     cylinder_->RegisterGenerator("cylinder", [this](std::mt19937& randomEngine, const Vector3& translate) {
@@ -106,7 +106,7 @@ void ParticleEffectLibrary::Initialize(DirectXCommon* dxCommon, SrvManager* srvM
         Particle p;
         p.transform.translate = translate;
         p.transform.scale = { 0.1f, 2.5f, 1.0f };
-        p.transform.rotate = { 0.0f, 0.0f, 0.0f }; // 필요 시 회전 추가
+        p.transform.rotate = { 0.0f, 0.0f, 0.0f }; 
         p.velocity = {};
         p.acceleration = {};
         p.color = { 1, 1, 1, 1 };
