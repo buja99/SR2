@@ -13,19 +13,19 @@
 #include "Camera.h"
 #include "Matrix4x4.h"
 #include "WorldTransform.h"
+#include <cassert>
 
 class WorldTransform;
 class Object3dCommon;
 
 using Microsoft::WRL::ComPtr;
 
-class Object3d
-{
-	public:
-		~Object3d();
+class Object3d {
+public:
+	~Object3d();
 
 	void Initialize(Object3dCommon* object3dCommon, WorldTransform* worldTransform);
-	
+
 	void Update();
 	void Draw();
 	void Cleanup();
@@ -40,30 +40,53 @@ class Object3d
 	void SetTextureDDS2D(const std::string& filePath);
 
 	// setter
-	void SetScale(const Vector3& scale) { transform.scale = scale; }
-	void SetRotate(const Vector3& rotate) { transform.rotate = rotate; }
-	void SetTranslate(const Vector3& translate) { transform.translate = translate; }
+	void SetScale(const Vector3& scale) {
+		assert(worldTransform_);
+		worldTransform_->scale_ = scale;
+	}
+
+	void SetRotate(const Vector3& rotate) {
+		assert(worldTransform_);
+		worldTransform_->rotate_ = rotate;
+	}
+
+	void SetTranslate(const Vector3& translate) {
+		assert(worldTransform_);
+		worldTransform_->translate_ = translate;
+	}
+
 	void SetCamera(Camera* camera) { this->camera = camera; }
 	void SetDefaultCamera(Camera* camera) { this->defaultCamera = camera; }
 	// getter
-	const Vector3& GetScale() const { return transform.scale; }
-	const Vector3& GetRotate() const { return transform.rotate; }
-	const Vector3& GetTranslate() const { return transform.translate; }
+	const Vector3& GetScale() const {
+		assert(worldTransform_);
+		return worldTransform_->scale_;
+	}
+
+	const Vector3& GetRotate() const {
+		assert(worldTransform_);
+		return worldTransform_->rotate_;
+	}
+
+	const Vector3& GetTranslate() const {
+		assert(worldTransform_);
+		return worldTransform_->translate_;
+	}
 	Camera* GetDefaultCamera() const { return defaultCamera; }
 	IModel* GetModel() const { return model_; }
 
 	// Lighting setter/getter
-    void SetEnableLighting(bool enable);
-    bool GetEnableLighting() const;
+	void SetEnableLighting(bool enable);
+	bool GetEnableLighting() const;
 
-    void SetIsBlinnPhong(bool isBlinn);
-    bool GetIsBlinnPhong() const;
+	void SetIsBlinnPhong(bool isBlinn);
+	bool GetIsBlinnPhong() const;
 
-    void SetUsePointLight(bool use);
-    bool GetUsePointLight() const;
+	void SetUsePointLight(bool use);
+	bool GetUsePointLight() const;
 
-    void SetUseDirectionalLight(bool use);
-    bool GetUseDirectionalLight() const;
+	void SetUseDirectionalLight(bool use);
+	bool GetUseDirectionalLight() const;
 
 	void SetUseSpotLight(bool use);
 	bool GetUseSpotLight() const;
@@ -95,7 +118,6 @@ private:
 	//void InitializeMaterial();
 	void InitializeTransformationMatrix();
 
-	Transform transform;
 	Transform cameraTransform;
 
 	Camera* camera = nullptr;

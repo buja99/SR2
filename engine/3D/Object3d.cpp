@@ -26,7 +26,6 @@ void Object3d::Initialize(Object3dCommon* object3dCommon, WorldTransform* worldT
 	this->object3dCommon_ = object3dCommon;
 	worldTransform_ = worldTransform;
 
-	transform = { {1.0f,1.0f,1.0f},{0.0f,3.14f,0.0f},{0.0f,0.0f,10.0f} };
 	cameraTransform = { {1.0f,1.0f,1.0f},{0.3f,0.0f,0.0f},{0.0f,4.0f,-10.0f} };
 
 	cameraResource_ = ResourceUtils::CreateBufferResource(object3dCommon_->GetDxCommon()->GetDevice(), sizeof(CameraForGPU));
@@ -48,11 +47,6 @@ void Object3d::Update() {
 	if (model_) {
 		model_->Update(1.0f / 60.0f); 
 	}
-
-	
-	worldTransform_->scale_ = transform.scale;
-	worldTransform_->rotate_ = transform.rotate;
-	worldTransform_->translate_ = transform.translate;
 
 	
 	worldTransform_->UpdateMatrix();
